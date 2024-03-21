@@ -746,7 +746,6 @@ impl WindowsWindowInner {
     fn handle_ime_composition(&self, lparam: LPARAM) -> Option<isize> {
         let mut ime_input = None;
         if lparam.0 as u32 & GCS_COMPSTR.0 > 0 {
-            println!("COMP str: {}", lparam.0);
             let Some((string, string_len)) = self.parse_ime_compostion_string() else {
                 return None;
             };
@@ -762,7 +761,6 @@ impl WindowsWindowInner {
             self.input_handler.set(Some(input_handler));
         }
         if lparam.0 as u32 & GCS_CURSORPOS.0 > 0 {
-            println!("cursor pos: {}", lparam.0);
             let Some(comp_string) = ime_input else {
                 return None;
             };
