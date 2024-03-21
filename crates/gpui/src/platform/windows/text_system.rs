@@ -120,7 +120,7 @@ impl PlatformTextSystem for WindowsTextSystem {
     fn font_metrics(&self, font_id: FontId) -> FontMetrics {
         let metrics = self.0.read().fonts[font_id.0].as_swash().metrics(&[]);
 
-        FontMetrics {
+        let res = FontMetrics {
             units_per_em: metrics.units_per_em as u32,
             ascent: metrics.ascent,
             descent: -metrics.descent, // todo(windows) confirm this is correct
@@ -134,7 +134,9 @@ impl PlatformTextSystem for WindowsTextSystem {
                 origin: point(0.0, 0.0),
                 size: size(metrics.max_width, metrics.ascent + metrics.descent),
             },
-        }
+        };
+        println!("Metrics: {:#?}", res);
+        res
     }
 
     fn typographic_bounds(&self, font_id: FontId, glyph_id: GlyphId) -> Result<Bounds<f32>> {
@@ -162,7 +164,8 @@ impl PlatformTextSystem for WindowsTextSystem {
     }
 
     fn glyph_raster_bounds(&self, params: &RenderGlyphParams) -> Result<Bounds<DevicePixels>> {
-        self.0.write().raster_bounds(params)
+        todo!()
+        // self.0.write().raster_bounds(params)
     }
 
     fn rasterize_glyph(
@@ -377,6 +380,7 @@ impl WindowsTextSystemState {
             });
             runs.push(crate::ShapedRun { font_id, glyphs });
         }
+        println!("runs: {:#?}", runs);
         LineLayout {
             font_size,
             width: layout.w.into(),
