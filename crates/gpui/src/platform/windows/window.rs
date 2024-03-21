@@ -51,7 +51,6 @@ pub(crate) struct WindowsWindowInner {
     pub(crate) handle: AnyWindowHandle,
     hide_title_bar: bool,
     display: RefCell<Rc<WindowsDisplay>>,
-    last_ime_input: RefCell<Option<String>>,
 }
 
 impl WindowsWindowInner {
@@ -111,7 +110,7 @@ impl WindowsWindowInner {
         let renderer = RefCell::new(BladeRenderer::new(gpu, extent));
         let callbacks = RefCell::new(Callbacks::default());
         let display = RefCell::new(display);
-        let last_ime_input = RefCell::new(None);
+
         Self {
             hwnd,
             origin,
@@ -124,7 +123,6 @@ impl WindowsWindowInner {
             handle,
             hide_title_bar,
             display,
-            last_ime_input,
         }
     }
 
@@ -746,7 +744,9 @@ impl WindowsWindowInner {
     }
 
     fn handle_ime_composition(&self, lparam: LPARAM) -> Option<isize> {
+        let mut ime_input = None;
         if lparam.0 as u32 & GCS_COMPSTR.0 > 0 {
+            println!("COMP str: {}", lparam.0);
             let Some((string, string_len)) = self.parse_ime_compostion_string() else {
                 return None;
             };
@@ -758,18 +758,23 @@ impl WindowsWindowInner {
                 string.as_str(),
                 Some(0..string_len),
             );
+            ime_input = Some(string);
             self.input_handler.set(Some(input_handler));
-            *self.last_ime_input.borrow_mut() = Some(string);
         }
         if lparam.0 as u32 & GCS_CURSORPOS.0 > 0 {
-            let Some(ref comp_string) = *self.last_ime_input.borrow() else {
+            println!("cursor pos: {}", lparam.0);
+            let Some(comp_string) = ime_input else {
                 return None;
             };
             let caret_pos = self.retrieve_composition_cursor_position();
             let Some(mut input_handler) = self.input_handler.take() else {
                 return None;
             };
-            input_handler.replace_and_mark_text_in_range(None, comp_string, Some(0..caret_pos));
+            input_handler.replace_and_mark_text_in_range(
+                None,
+                comp_string.as_str(),
+                Some(0..caret_pos),
+            );
             self.input_handler.set(Some(input_handler));
         }
         // currently, we don't care other stuff
@@ -793,7 +798,6 @@ impl WindowsWindowInner {
         };
         input_handler.replace_text_in_range(None, &ime_char);
         self.input_handler.set(Some(input_handler));
-        *self.last_ime_input.borrow_mut() = None;
         self.invalidate_client_area();
         Some(0)
     }
