@@ -347,10 +347,16 @@ sys-locale = "0.3.1"
 [workspace.dependencies.windows]
 version = "0.53.0"
 features = [
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_System_WinRT_Composition",
+    "System",
+    "Win32_System_WinRT",
+    "UI_Composition",
     "implement",
     "Wdk_System_SystemServices",
     "Win32_Globalization",
     "Win32_Graphics_DirectWrite",
+    "Win32_Graphics_Dwm",
     "Win32_Graphics_Gdi",
     "Win32_Media",
     "Win32_Security",

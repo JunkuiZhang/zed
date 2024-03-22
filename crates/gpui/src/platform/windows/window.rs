@@ -24,8 +24,23 @@ use windows::{
     core::*,
     Win32::{
         Foundation::*,
-        Graphics::Gdi::*,
-        System::{Com::*, Ole::*, SystemServices::*},
+        Graphics::{
+            Dwm::{
+                DwmEnableBlurBehindWindow, DwmGetWindowAttribute, DwmSetWindowAttribute,
+                DWMSBT_MAINWINDOW, DWMWA_NCRENDERING_ENABLED, DWMWA_SYSTEMBACKDROP_TYPE,
+                DWMWINDOWATTRIBUTE, DWM_BB_BLURREGION, DWM_BB_ENABLE, DWM_BLURBEHIND,
+            },
+            Gdi::*,
+        },
+        System::{
+            Com::*,
+            Ole::*,
+            SystemServices::*,
+            WinRT::{
+                Composition::ICompositorDesktopInterop, CreateDispatcherQueueController,
+                DispatcherQueueOptions, DQTAT_COM_NONE, DQTAT_COM_STA, DQTYPE_THREAD_CURRENT,
+            },
+        },
         UI::{
             Controls::*,
             HiDpi::*,
@@ -34,6 +49,7 @@ use windows::{
             WindowsAndMessaging::*,
         },
     },
+    UI::Composition::Compositor,
 };
 
 use crate::platform::blade::BladeRenderer;
@@ -1167,6 +1183,26 @@ impl WindowsWindow {
             inner: context.inner.unwrap(),
             drag_drop_handler,
         };
+        unsafe {
+            // let mut ret = 0u32;
+            // DwmGetWindowAttribute(
+            //     wnd.inner.hwnd,
+            //     DWMWA_NCRENDERING_ENABLED,
+            //     &mut ret as *mut _ as _,
+            //     std::mem::size_of::<u32>() as u32,
+            // )
+            // .unwrap();
+            // println!("NCRender: {}", ret);
+            // DWMWA_MICA
+            let state = DWMSBT_MAINWINDOW.0;
+            DwmSetWindowAttribute(
+                wnd.inner.hwnd,
+                DWMWA_SYSTEMBACKDROP_TYPE,
+                &state as *const _ as _,
+                std::mem::size_of::<i32>() as u32,
+            )
+            .unwrap();
+        }
         platform_inner
             .raw_window_handles
             .write()
