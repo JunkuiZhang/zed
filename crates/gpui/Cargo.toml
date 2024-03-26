@@ -12,11 +12,7 @@ workspace = true
 
 [features]
 default = []
-test-support = [
-    "backtrace",
-    "collections/test-support",
-    "util/test-support",
-]
+test-support = ["backtrace", "collections/test-support", "util/test-support"]
 runtime_shaders = []
 macos-blade = ["blade-graphics", "blade-macros", "blade-rwh", "bytemuck"]
 
@@ -123,6 +119,7 @@ xkbcommon = { version = "0.7", features = ["wayland", "x11"] }
 
 [target.'cfg(windows)'.dependencies]
 windows.workspace = true
+truetype = "0.47"
 
 [[example]]
 name = "hello_world"
