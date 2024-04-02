@@ -164,8 +164,8 @@ impl PlatformTextSystem for WindowsTextSystem {
     }
 
     fn glyph_raster_bounds(&self, params: &RenderGlyphParams) -> Result<Bounds<DevicePixels>> {
-        todo!()
-        // self.0.write().raster_bounds(params)
+        // todo!()
+        self.0.write().raster_bounds(params)
     }
 
     fn rasterize_glyph(
@@ -380,15 +380,16 @@ impl WindowsTextSystemState {
             });
             runs.push(crate::ShapedRun { font_id, glyphs });
         }
-        println!("runs: {:#?}", runs);
-        LineLayout {
+        let ret = LineLayout {
             font_size,
             width: layout.w.into(),
             ascent: layout.max_ascent.into(),
             descent: layout.max_descent.into(),
             runs,
             len: text.len(),
-        }
+        };
+        println!("Linelayout: {:#?}", ret);
+        ret
     }
 }
 
