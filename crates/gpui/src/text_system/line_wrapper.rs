@@ -9,7 +9,7 @@ pub struct LineWrapper {
     pub(crate) font_id: FontId,
     pub(crate) font_size: Pixels,
     cached_ascii_char_widths: [Option<Pixels>; 128],
-    cached_other_char_widths: HashMap<char, Pixels>,
+    cached_other_grapheme_widths: HashMap<String, Pixels>,
 }
 
 impl LineWrapper {
@@ -26,7 +26,7 @@ impl LineWrapper {
             font_id,
             font_size,
             cached_ascii_char_widths: [None; 128],
-            cached_other_char_widths: HashMap::default(),
+            cached_other_grapheme_widths: HashMap::default(),
         }
     }
 
@@ -42,22 +42,20 @@ impl LineWrapper {
         let mut last_candidate_ix = 0;
         let mut last_candidate_width = px(0.);
         let mut last_wrap_ix = 0;
-        let mut prev_c = '\0';
-        // let mut char_indices = line.char_indices();
+        let mut prev_c = "\0";
         let mut char_indices = line.grapheme_indices(true);
         iter::from_fn(move || {
             for (ix, c) in char_indices.by_ref() {
-                let c = c.to_string().remove(0);
-                if c == '\n' {
+                if c == "\n" {
                     continue;
                 }
 
-                if prev_c == ' ' && c != ' ' && first_non_whitespace_ix.is_some() {
+                if prev_c == " " && c != " " && first_non_whitespace_ix.is_some() {
                     last_candidate_ix = ix;
                     last_candidate_width = width;
                 }
 
-                if c != ' ' && first_non_whitespace_ix.is_none() {
+                if c != " " && first_non_whitespace_ix.is_none() {
                     first_non_whitespace_ix = Some(ix);
                 }
 
@@ -81,7 +79,7 @@ impl LineWrapper {
                     }
 
                     if let Some(indent) = indent {
-                        width += self.width_for_char(' ') * indent as f32;
+                        width += self.width_for_char(" ") * indent as f32;
                     }
 
                     return Some(Boundary::new(last_wrap_ix, indent.unwrap_or(0)));
@@ -94,8 +92,10 @@ impl LineWrapper {
     }
 
     #[inline(always)]
-    fn width_for_char(&mut self, c: char) -> Pixels {
-        if (c as u32) < 128 {
+    fn width_for_char(&mut self, c: &str) -> Pixels {
+        println!("=> width for {}, {}", c, c.is_ascii());
+        if c.is_ascii() {
+            let c = c.chars().nth(0).unwrap();
             if let Some(cached_width) = self.cached_ascii_char_widths[c as usize] {
                 cached_width
             } else {
@@ -103,17 +103,18 @@ impl LineWrapper {
                 self.cached_ascii_char_widths[c as usize] = Some(width);
                 width
             }
-        } else if let Some(cached_width) = self.cached_other_char_widths.get(&c) {
+        } else if let Some(cached_width) = self.cached_other_grapheme_widths.get(c) {
             *cached_width
         } else {
-            let width = self.compute_width_for_char(c);
-            self.cached_other_char_widths.insert(c, width);
+            let width = self.compute_width_for_grapheme(c);
+            self.cached_other_grapheme_widths
+                .insert(c.to_owned(), width);
             width
         }
     }
 
     fn compute_width_for_char(&self, c: char) -> Pixels {
-        println!("Compute: {}", c);
+        println!("Compute asic: {}", c);
         let mut buffer = [0; 4];
         let buffer = c.encode_utf8(&mut buffer);
         self.platform_text_system
@@ -126,6 +127,22 @@ impl LineWrapper {
                 }],
             )
             .width
+    }
+
+    fn compute_width_for_grapheme(&self, grapheme: &str) -> Pixels {
+        let ret = self
+            .platform_text_system
+            .layout_line(
+                grapheme,
+                self.font_size,
+                &[FontRun {
+                    len: grapheme.len(),
+                    font_id: self.font_id,
+                }],
+            )
+            .width;
+        println!("Compute grapheme: {}: {}", grapheme, ret.0);
+        ret
     }
 }
 

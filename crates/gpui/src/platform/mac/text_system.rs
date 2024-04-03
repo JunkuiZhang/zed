@@ -184,7 +184,9 @@ impl PlatformTextSystem for MacTextSystem {
     }
 
     fn layout_line(&self, text: &str, font_size: Pixels, font_runs: &[FontRun]) -> LineLayout {
-        self.0.write().layout_line(text, font_size, font_runs)
+        let ret = self.0.write().layout_line(text, font_size, font_runs);
+        println!("=> Gen linelayout for {}:\n{:#?}", text, ret);
+        ret
     }
 
     fn wrap_line(
