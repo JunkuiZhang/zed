@@ -8,6 +8,7 @@ use std::{
     ops::Range,
     sync::Arc,
 };
+use unicode_segmentation::UnicodeSegmentation;
 
 /// A laid out and styled line of text
 #[derive(Default, Debug)]
@@ -118,14 +119,14 @@ impl LineLayout {
             glyph_ix: 0,
         };
         let mut last_boundary_x = px(0.);
-        let mut prev_ch = '\0';
+        let mut prev_ch = "\0";
         let mut glyphs = self
             .runs
             .iter()
             .enumerate()
             .flat_map(move |(run_ix, run)| {
                 run.glyphs.iter().enumerate().map(move |(glyph_ix, glyph)| {
-                    let character = text[glyph.index..].chars().next().unwrap();
+                    let character = text[glyph.index..].graphemes(true).next().unwrap();
                     (
                         WrapBoundary { run_ix, glyph_ix },
                         character,
@@ -136,16 +137,16 @@ impl LineLayout {
             .peekable();
 
         while let Some((boundary, ch, x)) = glyphs.next() {
-            if ch == '\n' {
+            if ch == "\n" {
                 continue;
             }
 
-            if prev_ch == ' ' && ch != ' ' && first_non_whitespace_ix.is_some() {
+            if prev_ch == " " && ch != " " && first_non_whitespace_ix.is_some() {
                 last_candidate_ix = Some(boundary);
                 last_candidate_x = x;
             }
 
-            if ch != ' ' && first_non_whitespace_ix.is_none() {
+            if ch != " " && first_non_whitespace_ix.is_none() {
                 first_non_whitespace_ix = Some(boundary);
             }
 

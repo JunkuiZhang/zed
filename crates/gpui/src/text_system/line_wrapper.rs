@@ -141,7 +141,12 @@ impl LineWrapper {
                 }],
             )
             .width;
-        println!("Compute grapheme: {}: {}", grapheme, ret.0);
+        println!(
+            "Compute grapheme: {}, len {}: {}",
+            grapheme,
+            grapheme.len(),
+            ret.0
+        );
         ret
     }
 }
