@@ -1,6 +1,7 @@
 use crate::{px, FontId, FontRun, Pixels, PlatformTextSystem};
 use collections::HashMap;
 use std::{iter, sync::Arc};
+use unicode_segmentation::UnicodeSegmentation;
 
 /// The GPUI line wrapper, used to wrap lines of text to a given width.
 pub struct LineWrapper {
@@ -42,9 +43,11 @@ impl LineWrapper {
         let mut last_candidate_width = px(0.);
         let mut last_wrap_ix = 0;
         let mut prev_c = '\0';
-        let mut char_indices = line.char_indices();
+        // let mut char_indices = line.char_indices();
+        let mut char_indices = line.grapheme_indices(true);
         iter::from_fn(move || {
             for (ix, c) in char_indices.by_ref() {
+                let c = c.to_string().remove(0);
                 if c == '\n' {
                     continue;
                 }
@@ -110,6 +113,7 @@ impl LineWrapper {
     }
 
     fn compute_width_for_char(&self, c: char) -> Pixels {
+        println!("Compute: {}", c);
         let mut buffer = [0; 4];
         let buffer = c.encode_utf8(&mut buffer);
         self.platform_text_system
