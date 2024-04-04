@@ -8,6 +8,7 @@ use std::{
     ops::Range,
     sync::Arc,
 };
+use unicode_segmentation::UnicodeSegmentation;
 
 /// A laid out and styled line of text
 #[derive(Default, Debug)]
@@ -118,34 +119,34 @@ impl LineLayout {
             glyph_ix: 0,
         };
         let mut last_boundary_x = px(0.);
-        let mut prev_ch = '\0';
+        let mut prev_grapheme = "\0";
         let mut glyphs = self
             .runs
             .iter()
             .enumerate()
             .flat_map(move |(run_ix, run)| {
                 run.glyphs.iter().enumerate().map(move |(glyph_ix, glyph)| {
-                    let character = text[glyph.index..].chars().next().unwrap();
+                    let grapheme = text[glyph.index..].graphemes(true).next().unwrap();
                     (
                         WrapBoundary { run_ix, glyph_ix },
-                        character,
+                        grapheme,
                         glyph.position.x,
                     )
                 })
             })
             .peekable();
 
-        while let Some((boundary, ch, x)) = glyphs.next() {
-            if ch == '\n' {
+        while let Some((boundary, grapheme, x)) = glyphs.next() {
+            if grapheme == "\n" {
                 continue;
             }
 
-            if prev_ch == ' ' && ch != ' ' && first_non_whitespace_ix.is_some() {
+            if prev_grapheme == " " && grapheme != " " && first_non_whitespace_ix.is_some() {
                 last_candidate_ix = Some(boundary);
                 last_candidate_x = x;
             }
 
-            if ch != ' ' && first_non_whitespace_ix.is_none() {
+            if grapheme != " " && first_non_whitespace_ix.is_none() {
                 first_non_whitespace_ix = Some(boundary);
             }
 
@@ -162,7 +163,7 @@ impl LineLayout {
 
                 boundaries.push(last_boundary);
             }
-            prev_ch = ch;
+            prev_grapheme = grapheme;
         }
 
         boundaries
