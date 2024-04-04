@@ -420,7 +420,7 @@ impl MessageEditor {
                         .reversed_graphemes_at(end_offset - query.len() - 1)
                         .next();
                     // Ensure we are at the start of the message or that the previous character is a whitespace
-                    if next_char.is_none() || next_char.unwrap().is_whitespace() {
+                    if next_char.is_none() || next_char.unwrap() == " " {
                         return Some(query.chars().rev().collect::<String>());
                     }
 
@@ -431,10 +431,10 @@ impl MessageEditor {
                         .reversed_graphemes_at(end_offset - query.len() - 1)
                         .take(100)
                     {
-                        if ch.is_whitespace() {
+                        if ch == " " {
                             break;
                         }
-                        containing_word.push(ch);
+                        containing_word.push_str(ch);
                     }
                     let containing_word = containing_word.chars().rev().collect::<String>();
                     if util::word_consists_of_emojis(containing_word.as_str()) {
