@@ -297,8 +297,8 @@ fn surrounding_html_tag(
             let first_child = cur_node.child(0);
             let last_child = cur_node.child(cur_node.child_count() - 1);
             if let (Some(first_child), Some(last_child)) = (first_child, last_child) {
-                let open_tag = open_tag(buffer.chars_for_range(first_child.byte_range()));
-                let close_tag = close_tag(buffer.chars_for_range(last_child.byte_range()));
+                let open_tag = open_tag(buffer.graphemes_for_range(first_child.byte_range()));
+                let close_tag = close_tag(buffer.graphemes_for_range(last_child.byte_range()));
                 // It needs to be handled differently according to the selection length
                 let is_valid = if selection.end.to_offset(map, Bias::Left)
                     - selection.start.to_offset(map, Bias::Left)
@@ -426,7 +426,7 @@ fn argument(
     ) -> Option<Range<usize>> {
         // Seek to the first non-whitespace character
         offset += buffer
-            .chars_at(offset)
+            .graphemes_at(offset)
             .take_while(|c| c.is_whitespace())
             .map(char::len_utf8)
             .sum::<usize>();
@@ -445,7 +445,7 @@ fn argument(
             // TODO: Is there any better way to filter out string brackets?
             // Used to filter out string brackets
             return matches!(
-                buffer.chars_at(open.start).next(),
+                buffer.graphemes_at(open.start).next(),
                 Some('(' | '[' | '{' | '<' | '|')
             );
         };

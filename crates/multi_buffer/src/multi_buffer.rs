@@ -35,6 +35,7 @@ use text::{
     BufferId, Edit, TextSummary,
 };
 use theme::SyntaxTheme;
+use unicode_segmentation::UnicodeSegmentation;
 
 use util::post_inc;
 
@@ -1491,20 +1492,20 @@ impl MultiBuffer {
     }
 
     pub fn is_completion_trigger(&self, position: Anchor, text: &str, cx: &AppContext) -> bool {
-        let mut chars = text.chars();
-        let char = if let Some(char) = chars.next() {
-            char
+        let mut graphemes = text.graphemes(true);
+        let grapheme = if let Some(grapheme) = graphemes.next() {
+            grapheme
         } else {
             return false;
         };
-        if chars.next().is_some() {
+        if graphemes.next().is_some() {
             return false;
         }
 
         let snapshot = self.snapshot(cx);
         let position = position.to_offset(&snapshot);
         let scope = snapshot.language_scope_at(position);
-        if char_kind(&scope, char) == CharKind::Word {
+        if char_kind(&scope, grapheme) == CharKind::Word {
             return true;
         }
 
@@ -1936,7 +1937,10 @@ impl MultiBufferSnapshot {
             .collect()
     }
 
-    pub fn reversed_chars_at<T: ToOffset>(&self, position: T) -> impl Iterator<Item = char> + '_ {
+    pub fn reversed_graphemes_at<T: ToOffset>(
+        &self,
+        position: T,
+    ) -> impl Iterator<Item = &str> + '_ {
         let mut offset = position.to_offset(self);
         let mut cursor = self.excerpts.cursor::<usize>();
         cursor.seek(&offset, Bias::Left, &());
@@ -1967,13 +1971,13 @@ impl MultiBufferSnapshot {
                 Some(chunk)
             }
         })
-        .flat_map(|c| c.chars().rev())
+        .flat_map(|c| c.graphemes(true).rev())
     }
 
-    pub fn chars_at<T: ToOffset>(&self, position: T) -> impl Iterator<Item = char> + '_ {
+    pub fn graphemes_at<T: ToOffset>(&self, position: T) -> impl Iterator<Item = &str> + '_ {
         let offset = position.to_offset(self);
         self.text_for_range(offset..self.len())
-            .flat_map(|chunk| chunk.chars())
+            .flat_map(|chunk| chunk.graphemes(true))
     }
 
     pub fn text_for_range<T: ToOffset>(&self, range: Range<T>) -> impl Iterator<Item = &str> + '_ {
@@ -2002,27 +2006,27 @@ impl MultiBufferSnapshot {
     pub fn surrounding_word<T: ToOffset>(&self, start: T) -> (Range<usize>, Option<CharKind>) {
         let mut start = start.to_offset(self);
         let mut end = start;
-        let mut next_chars = self.chars_at(start).peekable();
-        let mut prev_chars = self.reversed_chars_at(start).peekable();
+        let mut next_chars = self.graphemes_at(start).peekable();
+        let mut prev_chars = self.reversed_graphemes_at(start).peekable();
 
         let scope = self.language_scope_at(start);
-        let kind = |c| char_kind(&scope, c);
+        let kind = |grapheme| char_kind(&scope, grapheme);
         let word_kind = cmp::max(
             prev_chars.peek().copied().map(kind),
             next_chars.peek().copied().map(kind),
         );
 
         for ch in prev_chars {
-            if Some(kind(ch)) == word_kind && ch != '\n' {
-                start -= ch.len_utf8();
+            if Some(kind(ch)) == word_kind && ch != "\n" {
+                start -= ch.len();
             } else {
                 break;
             }
         }
 
         for ch in next_chars {
-            if Some(kind(ch)) == word_kind && ch != '\n' {
-                end += ch.len_utf8();
+            if Some(kind(ch)) == word_kind && ch != "\n" {
+                end += ch.len();
             } else {
                 break;
             }
@@ -5456,7 +5460,7 @@ mod tests {
             for _ in 0..10 {
                 let end_ix = text_rope.clip_offset(rng.gen_range(0..=text_rope.len()), Bias::Right);
                 assert_eq!(
-                    snapshot.reversed_chars_at(end_ix).collect::<String>(),
+                    snapshot.reversed_graphemes_at(end_ix).collect::<String>(),
                     expected_text[..end_ix].chars().rev().collect::<String>(),
                 );
             }

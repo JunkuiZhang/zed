@@ -349,7 +349,7 @@ impl MessageEditor {
 
         let Some(query) = buffer.update(cx, |buffer, _| {
             let mut query = String::new();
-            for ch in buffer.reversed_chars_at(end_offset).take(100) {
+            for ch in buffer.reversed_graphemes_at(end_offset).take(100) {
                 if ch == '@' {
                     return Some(query.chars().rev().collect::<String>());
                 }
@@ -412,10 +412,10 @@ impl MessageEditor {
 
         let Some(query) = buffer.update(cx, |buffer, _| {
             let mut query = String::new();
-            for ch in buffer.reversed_chars_at(end_offset).take(100) {
+            for ch in buffer.reversed_graphemes_at(end_offset).take(100) {
                 if ch == ':' {
                     let next_char = buffer
-                        .reversed_chars_at(end_offset - query.len() - 1)
+                        .reversed_graphemes_at(end_offset - query.len() - 1)
                         .next();
                     // Ensure we are at the start of the message or that the previous character is a whitespace
                     if next_char.is_none() || next_char.unwrap().is_whitespace() {
@@ -426,7 +426,7 @@ impl MessageEditor {
                     // and we only want to complete the shortcode if the word is made up of other emojis
                     let mut containing_word = String::new();
                     for ch in buffer
-                        .reversed_chars_at(end_offset - query.len() - 1)
+                        .reversed_graphemes_at(end_offset - query.len() - 1)
                         .take(100)
                     {
                         if ch.is_whitespace() {

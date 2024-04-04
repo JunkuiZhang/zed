@@ -691,7 +691,7 @@ impl DisplaySnapshot {
     }
 
     pub fn buffer_chars_at(&self, mut offset: usize) -> impl Iterator<Item = (char, usize)> + '_ {
-        self.buffer_snapshot.chars_at(offset).map(move |ch| {
+        self.buffer_snapshot.graphemes_at(offset).map(move |ch| {
             let ret = (ch, offset);
             offset += ch.len_utf8();
             ret
@@ -703,7 +703,7 @@ impl DisplaySnapshot {
         mut offset: usize,
     ) -> impl Iterator<Item = (char, usize)> + '_ {
         self.buffer_snapshot
-            .reversed_chars_at(offset)
+            .reversed_graphemes_at(offset)
             .map(move |ch| {
                 offset -= ch.len_utf8();
                 (ch, offset)
@@ -786,7 +786,7 @@ impl DisplaySnapshot {
 
         let mut indent_size = 0;
         let mut is_blank = false;
-        for c in buffer.chars_at(Point::new(range.start.row, 0)) {
+        for c in buffer.graphemes_at(Point::new(range.start.row, 0)) {
             if c == ' ' || c == '\t' {
                 indent_size += 1;
             } else {
@@ -1171,7 +1171,7 @@ pub mod tests {
                 assert_eq!(prev_buffer_bound.column, 0);
                 assert_eq!(prev_display_bound.column(), 0);
                 if next_buffer_bound < buffer.max_point() {
-                    assert_eq!(buffer.chars_at(next_buffer_bound).next(), Some('\n'));
+                    assert_eq!(buffer.graphemes_at(next_buffer_bound).next(), Some('\n'));
                 }
 
                 assert_eq!(

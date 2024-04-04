@@ -228,7 +228,7 @@ impl InlineCompletionProvider for CopilotCompletionProvider {
 
         let mut completion_range = completion.range.to_offset(buffer);
         let prefix_len = common_prefix(
-            buffer.chars_for_range(completion_range.clone()),
+            buffer.graphemes_for_range(completion_range.clone()),
             completion.text.chars(),
         );
         completion_range.start += prefix_len;

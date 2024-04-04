@@ -1489,7 +1489,7 @@ fn find_backward(
         to = new_to;
     }
 
-    let next = map.buffer_snapshot.chars_at(to.to_point(map)).next();
+    let next = map.buffer_snapshot.graphemes_at(to.to_point(map)).next();
     if next.is_some() && is_character_match(target, next.unwrap(), smartcase) {
         if after {
             *to.column_mut() += 1;

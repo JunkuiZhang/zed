@@ -328,19 +328,19 @@ fn test_chars_at() {
     buffer.edit([(18..18, "\npqrs")]);
     buffer.edit([(18..21, "\nPQ")]);
 
-    let chars = buffer.chars_at(Point::new(0, 0));
+    let chars = buffer.graphemes_at(Point::new(0, 0));
     assert_eq!(chars.collect::<String>(), "abcd\nefgh\nijkl\nmno\nPQrs");
 
-    let chars = buffer.chars_at(Point::new(1, 0));
+    let chars = buffer.graphemes_at(Point::new(1, 0));
     assert_eq!(chars.collect::<String>(), "efgh\nijkl\nmno\nPQrs");
 
-    let chars = buffer.chars_at(Point::new(2, 0));
+    let chars = buffer.graphemes_at(Point::new(2, 0));
     assert_eq!(chars.collect::<String>(), "ijkl\nmno\nPQrs");
 
-    let chars = buffer.chars_at(Point::new(3, 0));
+    let chars = buffer.graphemes_at(Point::new(3, 0));
     assert_eq!(chars.collect::<String>(), "mno\nPQrs");
 
-    let chars = buffer.chars_at(Point::new(4, 0));
+    let chars = buffer.graphemes_at(Point::new(4, 0));
     assert_eq!(chars.collect::<String>(), "PQrs");
 
     // Regression test:
@@ -348,7 +348,7 @@ fn test_chars_at() {
     buffer.edit([(0..0, "[workspace]\nmembers = [\n    \"xray_core\",\n    \"xray_server\",\n    \"xray_cli\",\n    \"xray_wasm\",\n]\n")]);
     buffer.edit([(60..60, "\n")]);
 
-    let chars = buffer.chars_at(Point::new(6, 0));
+    let chars = buffer.graphemes_at(Point::new(6, 0));
     assert_eq!(chars.collect::<String>(), "    \"xray_wasm\",\n]\n");
 }
 

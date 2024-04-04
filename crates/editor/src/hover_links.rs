@@ -643,7 +643,7 @@ pub(crate) fn find_url(
     let mut found_start = false;
     let mut found_end = false;
 
-    for ch in snapshot.reversed_chars_at(offset).take(LIMIT) {
+    for ch in snapshot.reversed_graphemes_at(offset).take(LIMIT) {
         if ch.is_whitespace() {
             found_start = true;
             break;
@@ -656,7 +656,7 @@ pub(crate) fn find_url(
     }
 
     for ch in snapshot
-        .chars_at(offset)
+        .graphemes_at(offset)
         .take(LIMIT - (offset - token_start))
     {
         if ch.is_whitespace() {

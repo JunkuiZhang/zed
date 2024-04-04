@@ -2423,7 +2423,7 @@ impl Editor {
                             // selection is preceded by the rest of the opening bracket, then
                             // insert the closing bracket.
                             let following_text_allows_autoclose = snapshot
-                                .chars_at(selection.start)
+                                .graphemes_at(selection.start)
                                 .next()
                                 .map_or(true, |c| scope.should_autoclose_before(c));
                             let preceding_text_matches_prefix = prefix_len == 0
@@ -2641,7 +2641,7 @@ impl Editor {
     ) -> Option<String> {
         let mut chars = Vec::new();
         let mut found_colon = false;
-        for char in snapshot.reversed_chars_at(position).take(100) {
+        for char in snapshot.reversed_graphemes_at(position).take(100) {
             // Found a possible emoji shortcode in the middle of the buffer
             if found_colon {
                 if char.is_whitespace() {
@@ -2652,7 +2652,7 @@ impl Editor {
                 // and we only want to complete the shortcode if the word is made up of other emojis
                 let mut containing_word = String::new();
                 for ch in snapshot
-                    .reversed_chars_at(position)
+                    .reversed_graphemes_at(position)
                     .skip(chars.len() + 1)
                     .take(100)
                 {
@@ -2702,13 +2702,13 @@ impl Editor {
                             &language_scope
                         {
                             let leading_whitespace_len = buffer
-                                .reversed_chars_at(start)
+                                .reversed_graphemes_at(start)
                                 .take_while(|c| c.is_whitespace() && *c != '\n')
                                 .map(|c| c.len_utf8())
                                 .sum::<usize>();
 
                             let trailing_whitespace_len = buffer
-                                .chars_at(end)
+                                .graphemes_at(end)
                                 .take_while(|c| c.is_whitespace() && *c != '\n')
                                 .map(|c| c.len_utf8())
                                 .sum::<usize>();
@@ -2744,7 +2744,7 @@ impl Editor {
 
                                 let mut index_of_first_non_whitespace = 0;
                                 let comment_candidate = snapshot
-                                    .chars_for_range(range)
+                                    .graphemes_for_range(range)
                                     .skip_while(|c| {
                                         let should_skip = c.is_whitespace();
                                         if should_skip {
@@ -4029,14 +4029,14 @@ impl Editor {
             if let Some(completion) = self.take_active_inline_completion(cx) {
                 let mut partial_completion = completion
                     .text
-                    .chars()
+                    .graphemes()
                     .by_ref()
                     .take_while(|c| c.is_alphabetic())
                     .collect::<String>();
                 if partial_completion.is_empty() {
                     partial_completion = completion
                         .text
-                        .chars()
+                        .graphemes()
                         .by_ref()
                         .take_while(|c| c.is_whitespace() || !c.is_alphabetic())
                         .collect::<String>();
@@ -4298,9 +4298,9 @@ impl Editor {
                     };
 
                     let mut bracket_pair = None;
-                    let next_chars = snapshot.chars_at(selection_head).collect::<String>();
+                    let next_chars = snapshot.graphemes_at(selection_head).collect::<String>();
                     let prev_chars = snapshot
-                        .reversed_chars_at(selection_head)
+                        .reversed_graphemes_at(selection_head)
                         .collect::<String>();
                     for (pair, enabled) in scope.brackets() {
                         if enabled
@@ -5462,8 +5462,10 @@ impl Editor {
                         let transpose_end = display_map
                             .buffer_snapshot
                             .clip_offset(transpose_offset + 1, Bias::Right);
-                        if let Some(ch) =
-                            display_map.buffer_snapshot.chars_at(transpose_start).next()
+                        if let Some(ch) = display_map
+                            .buffer_snapshot
+                            .graphemes_at(transpose_start)
+                            .next()
                         {
                             edits.push((transpose_start..transpose_offset, String::new()));
                             edits.push((transpose_end..transpose_end, ch.to_string()));

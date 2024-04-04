@@ -376,7 +376,7 @@ pub fn find_preceding_boundary_point(
     let mut prev_ch = None;
     let mut offset = from.to_offset(&buffer_snapshot);
 
-    for ch in buffer_snapshot.reversed_chars_at(offset) {
+    for ch in buffer_snapshot.reversed_graphemes_at(offset) {
         if find_range == FindRange::SingleLine && ch == '\n' {
             break;
         }
@@ -428,7 +428,7 @@ pub fn find_boundary_point(
     let mut prev_offset = offset;
     let mut prev_ch = None;
 
-    for ch in map.buffer_snapshot.chars_at(offset) {
+    for ch in map.buffer_snapshot.graphemes_at(offset) {
         if find_range == FindRange::SingleLine && ch == '\n' {
             break;
         }
@@ -473,7 +473,7 @@ pub fn chars_after(
     map: &DisplaySnapshot,
     mut offset: usize,
 ) -> impl Iterator<Item = (char, Range<usize>)> + '_ {
-    map.buffer_snapshot.chars_at(offset).map(move |ch| {
+    map.buffer_snapshot.graphemes_at(offset).map(move |ch| {
         let before = offset;
         offset = offset + ch.len_utf8();
         (ch, before..offset)
@@ -488,7 +488,7 @@ pub fn chars_before(
     mut offset: usize,
 ) -> impl Iterator<Item = (char, Range<usize>)> + '_ {
     map.buffer_snapshot
-        .reversed_chars_at(offset)
+        .reversed_graphemes_at(offset)
         .map(move |ch| {
             let after = offset;
             offset = offset - ch.len_utf8();
@@ -501,9 +501,9 @@ pub(crate) fn is_inside_word(map: &DisplaySnapshot, point: DisplayPoint) -> bool
     let scope = map.buffer_snapshot.language_scope_at(raw_point);
     let ix = map.clip_point(point, Bias::Left).to_offset(map, Bias::Left);
     let text = &map.buffer_snapshot;
-    let next_char_kind = text.chars_at(ix).next().map(|c| char_kind(&scope, c));
+    let next_char_kind = text.graphemes_at(ix).next().map(|c| char_kind(&scope, c));
     let prev_char_kind = text
-        .reversed_chars_at(ix)
+        .reversed_graphemes_at(ix)
         .next()
         .map(|c| char_kind(&scope, c));
     prev_char_kind.zip(next_char_kind) == Some((CharKind::Word, CharKind::Word))

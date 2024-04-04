@@ -1778,7 +1778,7 @@ mod tests {
 
             let mut buffer_point = Point::default();
             let mut inlay_point = inlay_snapshot.to_inlay_point(buffer_point);
-            let mut buffer_chars = buffer_snapshot.chars_at(0);
+            let mut buffer_chars = buffer_snapshot.graphemes_at(0);
             loop {
                 // Ensure conversion from buffer coordinates to inlay coordinates
                 // is consistent.
@@ -1821,7 +1821,7 @@ mod tests {
 
             let mut inlay_point = InlayPoint::default();
             let mut inlay_offset = InlayOffset::default();
-            for ch in expected_text.chars() {
+            for ch in expected_text.graphemes() {
                 assert_eq!(
                     inlay_snapshot.to_offset(inlay_point),
                     inlay_offset,

@@ -36,6 +36,7 @@ sum_tree.workspace = true
 text.workspace = true
 theme.workspace = true
 util.workspace = true
+unicode-segmentation.workspace = true
 
 [dev-dependencies]
 gpui = { workspace = true, features = ["test-support"] }

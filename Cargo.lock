@@ -5257,6 +5257,7 @@ dependencies = [
  "tree-sitter-rust",
  "tree-sitter-typescript",
  "unicase",
+ "unicode-segmentation",
  "unindent",
  "util",
 ]
@@ -5904,6 +5905,7 @@ dependencies = [
  "sum_tree",
  "text",
  "theme",
+ "unicode-segmentation",
  "util",
 ]
 
@@ -7798,6 +7800,7 @@ dependencies = [
  "rand 0.8.5",
  "smallvec",
  "sum_tree",
+ "unicode-segmentation",
  "util",
 ]
 
@@ -9630,6 +9633,7 @@ dependencies = [
  "rope",
  "smallvec",
  "sum_tree",
+ "unicode-segmentation",
  "util",
 ]
 

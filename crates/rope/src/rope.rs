@@ -12,6 +12,7 @@ use std::{
     str,
 };
 use sum_tree::{Bias, Dimension, SumTree};
+use unicode_segmentation::UnicodeSegmentation;
 use util::debug_panic;
 
 pub use offset_utf16::OffsetUtf16;
@@ -218,17 +219,18 @@ impl Rope {
         Cursor::new(self, offset)
     }
 
-    pub fn chars(&self) -> impl Iterator<Item = char> + '_ {
-        self.chars_at(0)
+    pub fn graphemes(&self) -> impl Iterator<Item = &str> + '_ {
+        self.graphemes_at(0)
     }
 
-    pub fn chars_at(&self, start: usize) -> impl Iterator<Item = char> + '_ {
-        self.chunks_in_range(start..self.len()).flat_map(str::chars)
+    pub fn graphemes_at(&self, start: usize) -> impl Iterator<Item = &str> + '_ {
+        self.chunks_in_range(start..self.len())
+            .flat_map(|grapheme| grapheme.graphemes(true))
     }
 
-    pub fn reversed_chars_at(&self, start: usize) -> impl Iterator<Item = char> + '_ {
+    pub fn reversed_graphemes_at(&self, start: usize) -> impl Iterator<Item = &str> + '_ {
         self.reversed_chunks_in_range(0..start)
-            .flat_map(|chunk| chunk.chars().rev())
+            .flat_map(|chunk| chunk.graphemes(true).rev())
     }
 
     pub fn bytes_in_range(&self, range: Range<usize>) -> Bytes {

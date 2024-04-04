@@ -118,7 +118,7 @@ fn find_number(
     let mut offset = start.to_offset(snapshot);
 
     // go backwards to the start of any number the selection is within
-    for ch in snapshot.reversed_chars_at(offset) {
+    for ch in snapshot.reversed_graphemes_at(offset) {
         if ch.is_ascii_digit() || ch == '-' || ch == 'b' || ch == 'x' {
             offset -= ch.len_utf8();
             continue;
@@ -131,7 +131,7 @@ fn find_number(
     let mut num = String::new();
     let mut radix = 10;
 
-    let mut chars = snapshot.chars_at(offset).peekable();
+    let mut chars = snapshot.graphemes_at(offset).peekable();
     // find the next number on the line (may start after the original cursor position)
     while let Some(ch) = chars.next() {
         if num == "0" && ch == 'b' && chars.peek().is_some() && chars.peek().unwrap().is_digit(2) {

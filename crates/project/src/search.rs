@@ -286,10 +286,10 @@ impl SearchQuery {
                         let scope = buffer.language_scope_at(range_offset + mat.start());
                         let kind = |c| char_kind(&scope, c);
 
-                        let prev_kind = rope.reversed_chars_at(mat.start()).next().map(kind);
-                        let start_kind = kind(rope.chars_at(mat.start()).next().unwrap());
-                        let end_kind = kind(rope.reversed_chars_at(mat.end()).next().unwrap());
-                        let next_kind = rope.chars_at(mat.end()).next().map(kind);
+                        let prev_kind = rope.reversed_graphemes_at(mat.start()).next().map(kind);
+                        let start_kind = kind(rope.graphemes_at(mat.start()).next().unwrap());
+                        let end_kind = kind(rope.reversed_graphemes_at(mat.end()).next().unwrap());
+                        let next_kind = rope.graphemes_at(mat.end()).next().map(kind);
                         if Some(start_kind) == prev_kind || Some(end_kind) == next_kind {
                             continue;
                         }

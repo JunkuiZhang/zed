@@ -57,6 +57,7 @@ tree-sitter-typescript = { workspace = true, optional = true }
 pulldown-cmark.workspace = true
 tree-sitter.workspace = true
 unicase = "2.6"
+unicode-segmentation.workspace = true
 util.workspace = true
 task.workspace = true
 
