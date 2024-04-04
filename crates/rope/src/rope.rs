@@ -12,7 +12,7 @@ use std::{
     str,
 };
 use sum_tree::{Bias, Dimension, SumTree};
-use unicode_segmentation::UnicodeSegmentation;
+use unicode_segmentation::{GraphemeCursor, UnicodeSegmentation};
 use util::debug_panic;
 
 pub use offset_utf16::OffsetUtf16;
@@ -763,6 +763,10 @@ impl Chunk {
     }
 
     fn offset_to_point(&self, target: usize) -> Point {
+        println!(
+            "Calling offset_to_point, with arg: {target:?}, with self: {:?}",
+            self.0
+        );
         let mut offset = 0;
         let mut point = Point::new(0, 0);
         for ch in self.0.graphemes(true) {
@@ -778,6 +782,7 @@ impl Chunk {
             }
             offset += ch.len();
         }
+        println!("Gen res: {point:?}");
         point
     }
 
@@ -801,6 +806,10 @@ impl Chunk {
     }
 
     fn point_to_offset(&self, target: Point) -> usize {
+        println!(
+            "Calling: point_to_offset, with arg: {target:?}, with self: {:?}",
+            self.0
+        );
         let mut offset = 0;
         let mut point = Point::new(0, 0);
 
@@ -829,6 +838,7 @@ impl Chunk {
 
             offset += ch.len();
         }
+        println!("Gen res: {offset}");
 
         offset
     }
@@ -923,15 +933,37 @@ impl Chunk {
     }
 
     fn clip_point(&self, target: Point, bias: Bias) -> Point {
+        println!(
+            "Clipping point:\n\t{:?}, with len: {}, with args: {:?}, {:?}",
+            self.0,
+            self.0.len(),
+            target,
+            bias
+        );
         for (row, line) in self.0.split('\n').enumerate() {
+            println!("Checking row: {row}\n\t{line}");
             if row == target.row as usize {
                 let mut column = target.column.min(line.len() as u32);
-                while !line.is_char_boundary(column as usize) {
+                let mut cursor = GraphemeCursor::new(0, line.len(), true);
+                println!("Pre process: {column}");
+                while !cursor.is_boundary(line, 0).unwrap() {
+                    cursor.set_cursor(column as usize);
                     match bias {
-                        Bias::Left => column -= 1,
-                        Bias::Right => column += 1,
+                        Bias::Left => {
+                            column = cursor
+                                .prev_boundary(line, 0)
+                                .unwrap_or(Some(column as usize - 1))
+                                .unwrap() as u32
+                        }
+                        Bias::Right => {
+                            column = cursor
+                                .next_boundary(line, 0)
+                                .unwrap_or(Some(column as usize + 1))
+                                .unwrap() as u32
+                        }
                     }
                 }
+                println!("Post process: {column}");
                 return Point::new(row as u32, column);
             }
         }
