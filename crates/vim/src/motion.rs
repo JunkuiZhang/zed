@@ -613,8 +613,16 @@ impl Motion {
                 mode,
                 smartcase,
             } => {
-                return find_forward(map, point, *before, *char, times, *mode, *smartcase)
-                    .map(|new_point| (new_point, SelectionGoal::None))
+                return find_forward(
+                    map,
+                    point,
+                    *before,
+                    char.to_string().as_str(),
+                    times,
+                    *mode,
+                    *smartcase,
+                )
+                .map(|new_point| (new_point, SelectionGoal::None));
             }
             // T F
             FindBackward {
@@ -623,7 +631,15 @@ impl Motion {
                 mode,
                 smartcase,
             } => (
-                find_backward(map, point, *after, *char, times, *mode, *smartcase),
+                find_backward(
+                    map,
+                    point,
+                    *after,
+                    char.to_string().as_str(),
+                    times,
+                    *mode,
+                    *smartcase,
+                ),
                 SelectionGoal::None,
             ),
             // ; -- repeat the last find done with t, f, T, F
@@ -634,11 +650,25 @@ impl Motion {
                     mode,
                     smartcase,
                 } => {
-                    let mut new_point =
-                        find_forward(map, point, before, char, times, mode, smartcase);
+                    let mut new_point = find_forward(
+                        map,
+                        point,
+                        before,
+                        char.to_string().as_str(),
+                        times,
+                        mode,
+                        smartcase,
+                    );
                     if new_point == Some(point) {
-                        new_point =
-                            find_forward(map, point, before, char, times + 1, mode, smartcase);
+                        new_point = find_forward(
+                            map,
+                            point,
+                            before,
+                            char.to_string().as_str(),
+                            times + 1,
+                            mode,
+                            smartcase,
+                        );
                     }
 
                     return new_point.map(|new_point| (new_point, SelectionGoal::None));
@@ -650,11 +680,25 @@ impl Motion {
                     mode,
                     smartcase,
                 } => {
-                    let mut new_point =
-                        find_backward(map, point, after, char, times, mode, smartcase);
+                    let mut new_point = find_backward(
+                        map,
+                        point,
+                        after,
+                        char.to_string().as_str(),
+                        times,
+                        mode,
+                        smartcase,
+                    );
                     if new_point == point {
-                        new_point =
-                            find_backward(map, point, after, char, times + 1, mode, smartcase);
+                        new_point = find_backward(
+                            map,
+                            point,
+                            after,
+                            char.to_string().as_str(),
+                            times + 1,
+                            mode,
+                            smartcase,
+                        );
                     }
 
                     (new_point, SelectionGoal::None)
@@ -669,11 +713,25 @@ impl Motion {
                     mode,
                     smartcase,
                 } => {
-                    let mut new_point =
-                        find_backward(map, point, before, char, times, mode, smartcase);
+                    let mut new_point = find_backward(
+                        map,
+                        point,
+                        before,
+                        char.to_string().as_str(),
+                        times,
+                        mode,
+                        smartcase,
+                    );
                     if new_point == point {
-                        new_point =
-                            find_backward(map, point, before, char, times + 1, mode, smartcase);
+                        new_point = find_backward(
+                            map,
+                            point,
+                            before,
+                            char.to_string().as_str(),
+                            times + 1,
+                            mode,
+                            smartcase,
+                        );
                     }
 
                     (new_point, SelectionGoal::None)
@@ -685,11 +743,25 @@ impl Motion {
                     mode,
                     smartcase,
                 } => {
-                    let mut new_point =
-                        find_forward(map, point, after, char, times, mode, smartcase);
+                    let mut new_point = find_forward(
+                        map,
+                        point,
+                        after,
+                        char.to_string().as_str(),
+                        times,
+                        mode,
+                        smartcase,
+                    );
                     if new_point == Some(point) {
-                        new_point =
-                            find_forward(map, point, after, char, times + 1, mode, smartcase);
+                        new_point = find_forward(
+                            map,
+                            point,
+                            after,
+                            char.to_string().as_str(),
+                            times + 1,
+                            mode,
+                            smartcase,
+                        );
                     }
 
                     return new_point.map(|new_point| (new_point, SelectionGoal::None));
@@ -1481,7 +1553,7 @@ fn find_backward(
     map: &DisplaySnapshot,
     from: DisplayPoint,
     after: bool,
-    target: char,
+    target: &str,
     times: usize,
     mode: FindRange,
     smartcase: bool,

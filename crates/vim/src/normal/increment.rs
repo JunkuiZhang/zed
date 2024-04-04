@@ -119,7 +119,7 @@ fn find_number(
 
     // go backwards to the start of any number the selection is within
     for ch in snapshot.reversed_graphemes_at(offset) {
-        if ch.is_ascii_digit() || ch == "-" || ch == "b" || ch == "x" {
+        if ch.chars().next().unwrap().is_ascii_digit() || ch == "-" || ch == "b" || ch == "x" {
             offset -= ch.len();
             continue;
         }
@@ -153,7 +153,7 @@ fn find_number(
             num = String::new();
         }
 
-        if ch.is_digit(radix)
+        if ch.chars().next().unwrap().is_digit(radix)
             || (begin.is_none()
                 && ch == "-"
                 && chars.peek().is_some()
@@ -168,7 +168,7 @@ fn find_number(
             if begin.is_none() {
                 begin = Some(offset);
             }
-            num.push(ch);
+            num.push_str(ch);
         } else {
             if begin.is_some() {
                 end = Some(offset);

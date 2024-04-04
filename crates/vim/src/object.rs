@@ -180,29 +180,29 @@ impl Object {
             Object::Sentence => sentence(map, relative_to, around),
             Object::Paragraph => paragraph(map, relative_to, around),
             Object::Quotes => {
-                surrounding_markers(map, relative_to, around, self.is_multiline(), '\'', '\'')
+                surrounding_markers(map, relative_to, around, self.is_multiline(), "'", "'")
             }
             Object::BackQuotes => {
-                surrounding_markers(map, relative_to, around, self.is_multiline(), '`', '`')
+                surrounding_markers(map, relative_to, around, self.is_multiline(), "`", "`")
             }
             Object::DoubleQuotes => {
-                surrounding_markers(map, relative_to, around, self.is_multiline(), '"', '"')
+                surrounding_markers(map, relative_to, around, self.is_multiline(), "\"", "\"")
             }
             Object::VerticalBars => {
-                surrounding_markers(map, relative_to, around, self.is_multiline(), '|', '|')
+                surrounding_markers(map, relative_to, around, self.is_multiline(), "|", "|")
             }
             Object::Parentheses => {
-                surrounding_markers(map, relative_to, around, self.is_multiline(), '(', ')')
+                surrounding_markers(map, relative_to, around, self.is_multiline(), "(", ")")
             }
             Object::Tag => surrounding_html_tag(map, selection, around),
             Object::SquareBrackets => {
-                surrounding_markers(map, relative_to, around, self.is_multiline(), '[', ']')
+                surrounding_markers(map, relative_to, around, self.is_multiline(), "[", "]")
             }
             Object::CurlyBrackets => {
-                surrounding_markers(map, relative_to, around, self.is_multiline(), '{', '}')
+                surrounding_markers(map, relative_to, around, self.is_multiline(), "{", "}")
             }
             Object::AngleBrackets => {
-                surrounding_markers(map, relative_to, around, self.is_multiline(), '<', '>')
+                surrounding_markers(map, relative_to, around, self.is_multiline(), "<", ">")
             }
             Object::Argument => argument(map, relative_to, around),
         }
@@ -260,7 +260,7 @@ fn surrounding_html_tag(
     selection: Selection<DisplayPoint>,
     around: bool,
 ) -> Option<Range<DisplayPoint>> {
-    fn read_tag(graphemes: impl Iterator<Item = &str>) -> String {
+    fn read_tag<'a>(graphemes: impl Iterator<Item = &'a str>) -> String {
         graphemes
             .take_while(|c| {
                 c.chars().next().unwrap().is_alphanumeric()
@@ -271,13 +271,13 @@ fn surrounding_html_tag(
             })
             .collect()
     }
-    fn open_tag(mut graphemes: impl Iterator<Item = &str>) -> Option<String> {
+    fn open_tag<'a>(mut graphemes: impl Iterator<Item = &'a str>) -> Option<String> {
         if Some("<") != graphemes.next() {
             return None;
         }
         Some(read_tag(graphemes))
     }
-    fn close_tag(mut graphemes: impl Iterator<Item = &str>) -> Option<String> {
+    fn close_tag<'a>(mut graphemes: impl Iterator<Item = &'a str>) -> Option<String> {
         if (Some("<"), Some("/")) != (graphemes.next(), graphemes.next()) {
             return None;
         }
@@ -678,7 +678,7 @@ fn expand_to_include_whitespace(
             break;
         }
 
-        if grapheme.is_whitespace() {
+        if grapheme == " " {
             if grapheme != "\n" {
                 range.end = offset + grapheme.len();
                 whitespace_included = true;
