@@ -256,8 +256,7 @@ pub fn previous_word_start(map: &DisplaySnapshot, point: DisplayPoint) -> Displa
     let scope = map.buffer_snapshot.language_scope_at(raw_point);
 
     find_preceding_boundary_display_point(map, point, FindRange::MultiLine, |left, right| {
-        (char_kind(&scope, left) != char_kind(&scope, right) && !right.is_whitespace())
-            || left == "\n"
+        (char_kind(&scope, left) != char_kind(&scope, right) && !(right == " ")) || left == "\n"
     })
 }
 
@@ -270,8 +269,9 @@ pub fn previous_subword_start(map: &DisplaySnapshot, point: DisplayPoint) -> Dis
 
     find_preceding_boundary_display_point(map, point, FindRange::MultiLine, |left, right| {
         let is_word_start = char_kind(&scope, left) != char_kind(&scope, right) && !(right == " ");
-        let is_subword_start =
-            left == "_" && right != "_" || left.is_lowercase() && right.is_uppercase();
+        let is_subword_start = left == "_" && right != "_"
+            || left.chars().next().unwrap().is_lowercase()
+                && right.chars().next().unwrap().is_uppercase();
         is_word_start || is_subword_start || left == "\n"
     })
 }
@@ -296,8 +296,9 @@ pub fn next_subword_end(map: &DisplaySnapshot, point: DisplayPoint) -> DisplayPo
 
     find_boundary(map, point, FindRange::MultiLine, |left, right| {
         let is_word_end = (char_kind(&scope, left) != char_kind(&scope, right)) && !(left == " ");
-        let is_subword_end =
-            left != "_" && right == "_" || left.is_lowercase() && right.is_uppercase();
+        let is_subword_end = left != "_" && right == "_"
+            || left.chars().next().unwrap().is_lowercase()
+                && right.chars().next().unwrap().is_uppercase();
         is_word_end || is_subword_end || right == "\n"
     })
 }
@@ -418,7 +419,7 @@ pub fn find_boundary_point(
     map: &DisplaySnapshot,
     from: DisplayPoint,
     find_range: FindRange,
-    mut is_boundary: impl FnMut(char, char) -> bool,
+    mut is_boundary: impl FnMut(&str, &str) -> bool,
     return_point_before_boundary: bool,
 ) -> DisplayPoint {
     let mut offset = from.to_offset(&map, Bias::Right);
@@ -426,7 +427,7 @@ pub fn find_boundary_point(
     let mut prev_ch = None;
 
     for ch in map.buffer_snapshot.graphemes_at(offset) {
-        if find_range == FindRange::SingleLine && ch == '\n' {
+        if find_range == FindRange::SingleLine && ch == "\n" {
             break;
         }
         if let Some(prev_ch) = prev_ch {
@@ -439,7 +440,7 @@ pub fn find_boundary_point(
             }
         }
         prev_offset = offset;
-        offset += ch.len_utf8();
+        offset += ch.len();
         prev_ch = Some(ch);
     }
     map.clip_point(offset.to_display_point(map), Bias::Right)
@@ -449,7 +450,7 @@ pub fn find_boundary(
     map: &DisplaySnapshot,
     from: DisplayPoint,
     find_range: FindRange,
-    is_boundary: impl FnMut(char, char) -> bool,
+    is_boundary: impl FnMut(&str, &str) -> bool,
 ) -> DisplayPoint {
     return find_boundary_point(map, from, find_range, is_boundary, false);
 }
@@ -458,7 +459,7 @@ pub fn find_boundary_exclusive(
     map: &DisplaySnapshot,
     from: DisplayPoint,
     find_range: FindRange,
-    is_boundary: impl FnMut(char, char) -> bool,
+    is_boundary: impl FnMut(&str, &str) -> bool,
 ) -> DisplayPoint {
     return find_boundary_point(map, from, find_range, is_boundary, true);
 }

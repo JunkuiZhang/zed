@@ -2659,7 +2659,7 @@ impl Editor {
                     if grap == " " {
                         break;
                     }
-                    containing_word.extend(grap);
+                    containing_word.push_str(grap);
                 }
                 let containing_word = containing_word.chars().rev().collect::<String>();
                 if util::word_consists_of_emojis(containing_word.as_str()) {
