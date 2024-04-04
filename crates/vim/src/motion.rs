@@ -1012,11 +1012,11 @@ pub(crate) fn next_word_start(
         let new_point = movement::find_boundary(map, point, FindRange::MultiLine, |left, right| {
             let left_kind = coerce_punctuation(char_kind(&scope, left), ignore_punctuation);
             let right_kind = coerce_punctuation(char_kind(&scope, right), ignore_punctuation);
-            let at_newline = right == '\n';
+            let at_newline = right == "\n";
 
             let found = (left_kind != right_kind && right_kind != CharKind::Whitespace)
                 || at_newline && crossed_newline
-                || at_newline && left == '\n'; // Prevents skipping repeated empty lines
+                || at_newline && left == "\n"; // Prevents skipping repeated empty lines
 
             crossed_newline |= at_newline;
             found
@@ -1047,7 +1047,7 @@ pub(crate) fn next_word_end(
             |left, right| {
                 let left_kind = coerce_punctuation(char_kind(&scope, left), ignore_punctuation);
                 let right_kind = coerce_punctuation(char_kind(&scope, right), ignore_punctuation);
-                let at_newline = right == '\n';
+                let at_newline = right == "\n";
 
                 if !allow_cross_newline && at_newline {
                     need_next_char = true;
@@ -1089,7 +1089,7 @@ fn previous_word_start(
                 let left_kind = coerce_punctuation(char_kind(&scope, left), ignore_punctuation);
                 let right_kind = coerce_punctuation(char_kind(&scope, right), ignore_punctuation);
 
-                (left_kind != right_kind && !right.is_whitespace()) || left == '\n'
+                (left_kind != right_kind && !(right == " ")) || left == "\n"
             },
         );
         if point == new_point {
@@ -1125,7 +1125,7 @@ fn previous_word_end(
                     | (CharKind::Punctuation, CharKind::Word)
                     | (CharKind::Word, CharKind::Whitespace)
                     | (CharKind::Word, CharKind::Punctuation) => true,
-                    (CharKind::Whitespace, CharKind::Whitespace) => left == '\n' && right == '\n',
+                    (CharKind::Whitespace, CharKind::Whitespace) => left == "\n" && right == "\n",
                     _ => false,
                 }
             },
@@ -1150,15 +1150,17 @@ fn next_subword_start(
         let new_point = movement::find_boundary(map, point, FindRange::MultiLine, |left, right| {
             let left_kind = coerce_punctuation(char_kind(&scope, left), ignore_punctuation);
             let right_kind = coerce_punctuation(char_kind(&scope, right), ignore_punctuation);
-            let at_newline = right == '\n';
+            let at_newline = right == "\n";
+            let left_char = left.chars().next().unwrap();
+            let rifht_char = right.chars().next().unwrap();
 
-            let is_word_start = (left_kind != right_kind) && !left.is_alphanumeric();
-            let is_subword_start =
-                left == '_' && right != '_' || left.is_lowercase() && right.is_uppercase();
+            let is_word_start = (left_kind != right_kind) && !left_char.is_alphanumeric();
+            let is_subword_start = left == "_" && right != "_"
+                || left_char.is_lowercase() && rifht_char.is_uppercase();
 
-            let found = (!right.is_whitespace() && (is_word_start || is_subword_start))
+            let found = (!rifht_char.is_whitespace() && (is_word_start || is_subword_start))
                 || at_newline && crossed_newline
-                || at_newline && left == '\n'; // Prevents skipping repeated empty lines
+                || at_newline && left == "\n"; // Prevents skipping repeated empty lines
 
             crossed_newline |= at_newline;
             found
@@ -1188,17 +1190,20 @@ pub(crate) fn next_subword_end(
             movement::find_boundary(map, new_point, FindRange::MultiLine, |left, right| {
                 let left_kind = coerce_punctuation(char_kind(&scope, left), ignore_punctuation);
                 let right_kind = coerce_punctuation(char_kind(&scope, right), ignore_punctuation);
-                let at_newline = right == '\n';
+                let at_newline = right == "\n";
+                let left_char = left.chars().next().unwrap();
+                let right_char = right.chars().next().unwrap();
 
                 if !allow_cross_newline && at_newline {
                     return true;
                 }
 
-                let is_word_end = (left_kind != right_kind) && !right.is_alphanumeric();
-                let is_subword_end =
-                    left != '_' && right == '_' || left.is_lowercase() && right.is_uppercase();
+                let is_word_end = (left_kind != right_kind) && !right_char.is_alphanumeric();
+                let is_subword_end = left != "_" && right == "_"
+                    || left_char.is_lowercase() && right_char.is_uppercase();
 
-                let found = !left.is_whitespace() && !at_newline && (is_word_end || is_subword_end);
+                let found =
+                    !left_char.is_whitespace() && !at_newline && (is_word_end || is_subword_end);
 
                 if found && (is_word_end || is_subword_end) {
                     need_backtrack = true;
@@ -1237,15 +1242,17 @@ fn previous_subword_start(
             |left, right| {
                 let left_kind = coerce_punctuation(char_kind(&scope, left), ignore_punctuation);
                 let right_kind = coerce_punctuation(char_kind(&scope, right), ignore_punctuation);
-                let at_newline = right == '\n';
+                let at_newline = right == "\n";
+                let left_char = left.chars().next().unwrap();
+                let right_char = right.chars().next().unwrap();
 
-                let is_word_start = (left_kind != right_kind) && !left.is_alphanumeric();
-                let is_subword_start =
-                    left == '_' && right != '_' || left.is_lowercase() && right.is_uppercase();
+                let is_word_start = (left_kind != right_kind) && !left_char.is_alphanumeric();
+                let is_subword_start = left == "_" && right != "_"
+                    || left_char.is_lowercase() && right_char.is_uppercase();
 
-                let found = (!right.is_whitespace() && (is_word_start || is_subword_start))
+                let found = (!right_char.is_whitespace() && (is_word_start || is_subword_start))
                     || at_newline && crossed_newline
-                    || at_newline && left == '\n'; // Prevents skipping repeated empty lines
+                    || at_newline && left == "\n"; // Prevents skipping repeated empty lines
 
                 crossed_newline |= at_newline;
 
@@ -1280,9 +1287,11 @@ fn previous_subword_end(
             |left, right| {
                 let left_kind = coerce_punctuation(char_kind(&scope, left), ignore_punctuation);
                 let right_kind = coerce_punctuation(char_kind(&scope, right), ignore_punctuation);
+                let left_char = left.chars().next().unwrap();
+                let right_char = right.chars().next().unwrap();
 
-                let is_subword_end =
-                    left != '_' && right == '_' || left.is_lowercase() && right.is_uppercase();
+                let is_subword_end = left != "_" && right == "_"
+                    || left_char.is_lowercase() && right_char.is_uppercase();
 
                 if is_subword_end {
                     return true;
@@ -1291,7 +1300,7 @@ fn previous_subword_end(
                 match (left_kind, right_kind) {
                     (CharKind::Word, CharKind::Whitespace)
                     | (CharKind::Word, CharKind::Punctuation) => true,
-                    (CharKind::Whitespace, CharKind::Whitespace) => left == '\n' && right == '\n',
+                    (CharKind::Whitespace, CharKind::Whitespace) => left == "\n" && right == "\n",
                     _ => false,
                 }
             },
@@ -1312,7 +1321,7 @@ pub(crate) fn first_non_whitespace(
     let mut start_offset = start_of_line(map, display_lines, from).to_offset(map, Bias::Left);
     let scope = map.buffer_snapshot.language_scope_at(from.to_point(map));
     for (ch, offset) in map.buffer_graphemes_at(start_offset) {
-        if ch == '\n' {
+        if ch == "\n" {
             return from;
         }
 
@@ -1436,7 +1445,7 @@ fn find_forward(
     map: &DisplaySnapshot,
     from: DisplayPoint,
     before: bool,
-    target: char,
+    target: &str,
     times: usize,
     mode: FindRange,
     smartcase: bool,
@@ -1502,12 +1511,12 @@ fn find_backward(
     }
 }
 
-fn is_character_match(target: char, other: char, smartcase: bool) -> bool {
+fn is_character_match(target: &str, other: &str, smartcase: bool) -> bool {
     if smartcase {
-        if target.is_uppercase() {
+        if target.chars().next().unwrap().is_uppercase() {
             target == other
         } else {
-            target == other.to_ascii_lowercase()
+            target == other.to_ascii_lowercase().as_str()
         }
     } else {
         target == other

@@ -260,22 +260,28 @@ fn surrounding_html_tag(
     selection: Selection<DisplayPoint>,
     around: bool,
 ) -> Option<Range<DisplayPoint>> {
-    fn read_tag(chars: impl Iterator<Item = char>) -> String {
-        chars
-            .take_while(|c| c.is_alphanumeric() || *c == ':' || *c == '-' || *c == '_' || *c == '.')
+    fn read_tag(graphemes: impl Iterator<Item = &str>) -> String {
+        graphemes
+            .take_while(|c| {
+                c.chars().next().unwrap().is_alphanumeric()
+                    || *c == ":"
+                    || *c == "-"
+                    || *c == "_"
+                    || *c == "."
+            })
             .collect()
     }
-    fn open_tag(mut chars: impl Iterator<Item = char>) -> Option<String> {
-        if Some('<') != chars.next() {
+    fn open_tag(mut graphemes: impl Iterator<Item = &str>) -> Option<String> {
+        if Some("<") != graphemes.next() {
             return None;
         }
-        Some(read_tag(chars))
+        Some(read_tag(graphemes))
     }
-    fn close_tag(mut chars: impl Iterator<Item = char>) -> Option<String> {
-        if (Some('<'), Some('/')) != (chars.next(), chars.next()) {
+    fn close_tag(mut graphemes: impl Iterator<Item = &str>) -> Option<String> {
+        if (Some("<"), Some("/")) != (graphemes.next(), graphemes.next()) {
             return None;
         }
-        Some(read_tag(chars))
+        Some(read_tag(graphemes))
     }
 
     let snapshot = &map.buffer_snapshot;
@@ -395,7 +401,7 @@ fn around_next_word(
         let left_kind = coerce_punctuation(char_kind(&scope, left), ignore_punctuation);
         let right_kind = coerce_punctuation(char_kind(&scope, right), ignore_punctuation);
 
-        let found = (word_found && left_kind != right_kind) || right == '\n' && left == '\n';
+        let found = (word_found && left_kind != right_kind) || right == "\n" && left == "\n";
 
         if right_kind != CharKind::Whitespace {
             word_found = true;
@@ -427,8 +433,8 @@ fn argument(
         // Seek to the first non-whitespace character
         offset += buffer
             .graphemes_at(offset)
-            .take_while(|c| c.is_whitespace())
-            .map(char::len_utf8)
+            .take_while(|c| *c == " ")
+            .map(str::len)
             .sum::<usize>();
 
         let bracket_filter = |open: Range<usize>, close: Range<usize>| {
@@ -446,7 +452,7 @@ fn argument(
             // Used to filter out string brackets
             return matches!(
                 buffer.graphemes_at(open.start).next(),
-                Some('(' | '[' | '{' | '<' | '|')
+                Some("(" | "[" | "{" | "<" | "|")
             );
         };
 
@@ -567,10 +573,10 @@ fn sentence(
     let relative_offset = relative_to.to_offset(map, Bias::Left);
     let mut previous_end = relative_offset;
 
-    let mut chars = map.buffer_graphemes_at(previous_end).peekable();
+    let mut graphemes = map.buffer_graphemes_at(previous_end).peekable();
 
     // Search backwards for the previous sentence end or current sentence start. Include the character under relative_to
-    for (char, offset) in chars
+    for (grapheme, offset) in graphemes
         .peek()
         .cloned()
         .into_iter()
@@ -580,7 +586,7 @@ fn sentence(
             break;
         }
 
-        if is_possible_sentence_start(char) {
+        if is_possible_sentence_start(grapheme) {
             start = Some(offset);
         }
 
@@ -589,8 +595,8 @@ fn sentence(
 
     // Search forward for the end of the current sentence or if we are between sentences, the start of the next one
     let mut end = relative_offset;
-    for (char, offset) in chars {
-        if start.is_none() && is_possible_sentence_start(char) {
+    for (grapheme, offset) in graphemes {
+        if start.is_none() && is_possible_sentence_start(grapheme) {
             if around {
                 start = Some(offset);
                 continue;
@@ -600,8 +606,8 @@ fn sentence(
             }
         }
 
-        if char != '\n' {
-            end = offset + char.len_utf8();
+        if grapheme != "\n" {
+            end = offset + grapheme.len();
         }
 
         if is_sentence_end(map, end) {
@@ -617,33 +623,38 @@ fn sentence(
     Some(range)
 }
 
-fn is_possible_sentence_start(character: char) -> bool {
-    !character.is_whitespace() && character != '.'
+fn is_possible_sentence_start(grapheme: &str) -> bool {
+    !(grapheme == " ") && grapheme != "."
 }
 
-const SENTENCE_END_PUNCTUATION: &[char] = &['.', '!', '?'];
-const SENTENCE_END_FILLERS: &[char] = &[')', ']', '"', '\''];
-const SENTENCE_END_WHITESPACE: &[char] = &[' ', '\t', '\n'];
+const SENTENCE_END_PUNCTUATION: &[&str] = &[".", "!", "?"];
+const SENTENCE_END_FILLERS: &[&str] = &[")", "]", "\"", "'"];
+const SENTENCE_END_WHITESPACE: &[&str] = &[" ", "\t", "\n"];
 fn is_sentence_end(map: &DisplaySnapshot, offset: usize) -> bool {
-    let mut next_chars = map.buffer_graphemes_at(offset).peekable();
-    if let Some((char, _)) = next_chars.next() {
+    let mut next_graphemes = map.buffer_graphemes_at(offset).peekable();
+    if let Some((grapheme, _)) = next_graphemes.next() {
         // We are at a double newline. This position is a sentence end.
-        if char == '\n' && next_chars.peek().map(|(c, _)| c == &'\n').unwrap_or(false) {
+        if grapheme == "\n"
+            && next_graphemes
+                .peek()
+                .map(|(c, _)| *c == "\n")
+                .unwrap_or(false)
+        {
             return true;
         }
 
         // The next text is not a valid whitespace. This is not a sentence end
-        if !SENTENCE_END_WHITESPACE.contains(&char) {
+        if !SENTENCE_END_WHITESPACE.contains(&grapheme) {
             return false;
         }
     }
 
-    for (char, _) in map.reverse_buffer_graphemes_at(offset) {
-        if SENTENCE_END_PUNCTUATION.contains(&char) {
+    for (grapheme, _) in map.reverse_buffer_graphemes_at(offset) {
+        if SENTENCE_END_PUNCTUATION.contains(&grapheme) {
             return true;
         }
 
-        if !SENTENCE_END_FILLERS.contains(&char) {
+        if !SENTENCE_END_FILLERS.contains(&grapheme) {
             return false;
         }
     }
@@ -661,15 +672,15 @@ fn expand_to_include_whitespace(
     let mut range = range.start.to_offset(map, Bias::Left)..range.end.to_offset(map, Bias::Right);
     let mut whitespace_included = false;
 
-    let mut chars = map.buffer_graphemes_at(range.end).peekable();
-    while let Some((char, offset)) = chars.next() {
-        if char == '\n' && stop_at_newline {
+    let mut graphemes = map.buffer_graphemes_at(range.end).peekable();
+    while let Some((grapheme, offset)) = graphemes.next() {
+        if grapheme == "\n" && stop_at_newline {
             break;
         }
 
-        if char.is_whitespace() {
-            if char != '\n' {
-                range.end = offset + char.len_utf8();
+        if grapheme.is_whitespace() {
+            if grapheme != "\n" {
+                range.end = offset + grapheme.len();
                 whitespace_included = true;
             }
         } else {
@@ -679,12 +690,12 @@ fn expand_to_include_whitespace(
     }
 
     if !whitespace_included {
-        for (char, point) in map.reverse_buffer_graphemes_at(range.start) {
-            if char == '\n' && stop_at_newline {
+        for (grapheme, point) in map.reverse_buffer_graphemes_at(range.start) {
+            if grapheme == "\n" && stop_at_newline {
                 break;
             }
 
-            if !char.is_whitespace() {
+            if !(grapheme == " ") {
                 break;
             }
 
@@ -788,13 +799,13 @@ pub fn end_of_paragraph(map: &DisplaySnapshot, display_point: DisplayPoint) -> D
     map.max_point()
 }
 
-fn surrounding_markers(
+fn surrounding_markers<'a, 'b>(
     map: &DisplaySnapshot,
     relative_to: DisplayPoint,
     around: bool,
     search_across_lines: bool,
-    open_marker: char,
-    close_marker: char,
+    open_marker: &'a str,
+    close_marker: &'b str,
 ) -> Option<Range<DisplayPoint>> {
     let point = relative_to.to_offset(map, Bias::Left);
 
@@ -806,7 +817,7 @@ fn surrounding_markers(
             if open_marker == close_marker {
                 let mut total = 0;
                 for (ch, _) in movement::graphemes_before(map, point) {
-                    if ch == '\n' {
+                    if ch == "\n" {
                         break;
                     }
                     if ch == open_marker {
@@ -824,7 +835,7 @@ fn surrounding_markers(
 
     if opening.is_none() {
         for (ch, range) in movement::graphemes_before(map, point) {
-            if ch == '\n' && !search_across_lines {
+            if ch == "\n" && !search_across_lines {
                 break;
             }
 
@@ -859,7 +870,7 @@ fn surrounding_markers(
     let mut closing = None;
 
     for (ch, range) in movement::graphemes_after(map, opening.end) {
-        if ch == '\n' && !search_across_lines {
+        if ch == "\n" && !search_across_lines {
             break;
         }
 
@@ -882,7 +893,7 @@ fn surrounding_markers(
         let mut found = false;
 
         for (ch, range) in movement::graphemes_after(map, closing.end) {
-            if ch.is_whitespace() && ch != '\n' {
+            if ch == " " && ch != "\n" {
                 found = true;
                 closing.end = range.end;
             } else {
@@ -892,7 +903,7 @@ fn surrounding_markers(
 
         if !found {
             for (ch, range) in movement::graphemes_before(map, opening.start) {
-                if ch.is_whitespace() && ch != '\n' {
+                if ch == " " && ch != "\n" {
                     opening.start = range.start
                 } else {
                     break;
@@ -903,16 +914,16 @@ fn surrounding_markers(
 
     if !around && search_across_lines {
         if let Some((ch, range)) = movement::graphemes_after(map, opening.end).next() {
-            if ch == '\n' {
+            if ch == "\n" {
                 opening.end = range.end
             }
         }
 
         for (ch, range) in movement::graphemes_before(map, closing.start) {
-            if !ch.is_whitespace() {
+            if ch != " " {
                 break;
             }
-            if ch != '\n' {
+            if ch != "\n" {
                 closing.start = range.start
             }
         }

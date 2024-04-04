@@ -89,12 +89,12 @@ pub fn delete_object(vim: &mut Vim, object: Object, around: bool, cx: &mut Windo
                     let contains_only_newlines = map
                         .buffer_graphemes_at(range.start)
                         .take_while(|(_, p)| p < &range.end)
-                        .all(|(char, _)| char == '\n')
+                        .all(|(grapheme, _)| grapheme == "\n")
                         && !offset_range.is_empty();
                     let end_at_newline = map
                         .buffer_graphemes_at(range.end)
                         .next()
-                        .map(|(c, _)| c == '\n')
+                        .map(|(c, _)| c == "\n")
                         .unwrap_or(false);
 
                     // If expanded range contains only newlines and

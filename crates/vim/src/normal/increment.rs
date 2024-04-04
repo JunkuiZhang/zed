@@ -119,8 +119,8 @@ fn find_number(
 
     // go backwards to the start of any number the selection is within
     for ch in snapshot.reversed_graphemes_at(offset) {
-        if ch.is_ascii_digit() || ch == '-' || ch == 'b' || ch == 'x' {
-            offset -= ch.len_utf8();
+        if ch.is_ascii_digit() || ch == "-" || ch == "b" || ch == "x" {
+            offset -= ch.len();
             continue;
         }
         break;
@@ -134,12 +134,20 @@ fn find_number(
     let mut chars = snapshot.graphemes_at(offset).peekable();
     // find the next number on the line (may start after the original cursor position)
     while let Some(ch) = chars.next() {
-        if num == "0" && ch == 'b' && chars.peek().is_some() && chars.peek().unwrap().is_digit(2) {
+        if num == "0"
+            && ch == "b"
+            && chars.peek().is_some()
+            && chars.peek().unwrap().chars().next().unwrap().is_digit(2)
+        {
             radix = 2;
             begin = None;
             num = String::new();
         }
-        if num == "0" && ch == 'x' && chars.peek().is_some() && chars.peek().unwrap().is_digit(16) {
+        if num == "0"
+            && ch == "x"
+            && chars.peek().is_some()
+            && chars.peek().unwrap().chars().next().unwrap().is_digit(16)
+        {
             radix = 16;
             begin = None;
             num = String::new();
@@ -147,9 +155,15 @@ fn find_number(
 
         if ch.is_digit(radix)
             || (begin.is_none()
-                && ch == '-'
+                && ch == "-"
                 && chars.peek().is_some()
-                && chars.peek().unwrap().is_digit(radix))
+                && chars
+                    .peek()
+                    .unwrap()
+                    .chars()
+                    .next()
+                    .unwrap()
+                    .is_digit(radix))
         {
             if begin.is_none() {
                 begin = Some(offset);
@@ -159,11 +173,11 @@ fn find_number(
             if begin.is_some() {
                 end = Some(offset);
                 break;
-            } else if ch == '\n' {
+            } else if ch == "\n" {
                 break;
             }
         }
-        offset += ch.len_utf8();
+        offset += ch.len();
     }
     if let Some(begin) = begin {
         let end = end.unwrap_or(offset);

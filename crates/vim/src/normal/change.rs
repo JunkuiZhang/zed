@@ -64,10 +64,10 @@ pub fn change_motion(vim: &mut Vim, motion: Motion, times: Option<usize>, cx: &m
                                 .buffer_snapshot
                                 .language_scope_at(selection.start.to_point(&map));
                             for (ch, offset) in map.buffer_graphemes_at(start_offset) {
-                                if ch == '\n' || char_kind(&scope, ch) != CharKind::Whitespace {
+                                if ch == "\n" || char_kind(&scope, ch) != CharKind::Whitespace {
                                     break;
                                 }
-                                start_offset = offset + ch.len_utf8();
+                                start_offset = offset + ch.len();
                             }
                             selection.start = start_offset.to_display_point(map);
                         }
