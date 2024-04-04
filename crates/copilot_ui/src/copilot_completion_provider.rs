@@ -234,7 +234,7 @@ impl InlineCompletionProvider for CopilotCompletionProvider {
         );
         completion_range.start += prefix_len;
         let suffix_len = common_prefix(
-            buffer.reversed_chars_for_range(completion_range.clone()),
+            buffer.reversed_graphemes_for_range(completion_range.clone()),
             completion.text[prefix_len..].graphemes(true).rev(),
         );
         completion_range.end = completion_range.end.saturating_sub(suffix_len);

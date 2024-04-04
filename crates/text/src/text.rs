@@ -1698,7 +1698,7 @@ impl BufferSnapshot {
             .flat_map(|chunk| chunk.graphemes(true))
     }
 
-    pub fn reversed_chars_for_range<T: ToOffset>(
+    pub fn reversed_graphemes_for_range<T: ToOffset>(
         &self,
         range: Range<T>,
     ) -> impl Iterator<Item = &str> + '_ {
