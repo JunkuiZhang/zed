@@ -7,6 +7,7 @@ use language::language_settings::AllLanguageSettings;
 use language::{language_settings::all_language_settings, Buffer, OffsetRangeExt, ToOffset};
 use settings::Settings;
 use std::{path::Path, sync::Arc, time::Duration};
+use unicode_segmentation::UnicodeSegmentation;
 
 pub const COPILOT_DEBOUNCE_TIMEOUT: Duration = Duration::from_millis(75);
 
@@ -229,12 +230,12 @@ impl InlineCompletionProvider for CopilotCompletionProvider {
         let mut completion_range = completion.range.to_offset(buffer);
         let prefix_len = common_prefix(
             buffer.graphemes_for_range(completion_range.clone()),
-            completion.text.chars(),
+            completion.text.graphemes(true),
         );
         completion_range.start += prefix_len;
         let suffix_len = common_prefix(
             buffer.reversed_chars_for_range(completion_range.clone()),
-            completion.text[prefix_len..].chars().rev(),
+            completion.text[prefix_len..].graphemes(true).rev(),
         );
         completion_range.end = completion_range.end.saturating_sub(suffix_len);
 
@@ -253,10 +254,13 @@ impl InlineCompletionProvider for CopilotCompletionProvider {
     }
 }
 
-fn common_prefix<T1: Iterator<Item = char>, T2: Iterator<Item = char>>(a: T1, b: T2) -> usize {
+fn common_prefix<'l1, 'l2, T1: Iterator<Item = &'l1 str>, T2: Iterator<Item = &'l2 str>>(
+    a: T1,
+    b: T2,
+) -> usize {
     a.zip(b)
         .take_while(|(a, b)| a == b)
-        .map(|(a, _)| a.len_utf8())
+        .map(|(a, _)| a.len())
         .sum()
 }
 

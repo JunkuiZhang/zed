@@ -24,6 +24,7 @@ menu.workspace = true
 settings.workspace = true
 ui.workspace = true
 util.workspace = true
+unicode-segmentation.workspace = true
 workspace.workspace = true
 zed_actions.workspace = true
 

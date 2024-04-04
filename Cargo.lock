@@ -2469,6 +2469,7 @@ dependencies = [
  "settings",
  "theme",
  "ui",
+ "unicode-segmentation",
  "util",
  "workspace",
  "zed_actions",
