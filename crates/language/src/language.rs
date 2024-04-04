@@ -1350,8 +1350,8 @@ impl LanguageScope {
             })
     }
 
-    pub fn should_autoclose_before(&self, c: char) -> bool {
-        c.is_whitespace() || self.language.config.autoclose_before.contains(c)
+    pub fn should_autoclose_before<'a>(&self, grapheme: &'a str) -> bool {
+        (grapheme == " ") || self.language.config.autoclose_before.contains(grapheme)
     }
 
     pub fn language_allowed(&self, name: &LanguageServerName) -> bool {

@@ -690,23 +690,28 @@ impl DisplaySnapshot {
             })
     }
 
-    pub fn buffer_chars_at(&self, mut offset: usize) -> impl Iterator<Item = (char, usize)> + '_ {
-        self.buffer_snapshot.graphemes_at(offset).map(move |ch| {
-            let ret = (ch, offset);
-            offset += ch.len_utf8();
-            ret
-        })
-    }
-
-    pub fn reverse_buffer_chars_at(
+    pub fn buffer_graphemes_at(
         &self,
         mut offset: usize,
-    ) -> impl Iterator<Item = (char, usize)> + '_ {
+    ) -> impl Iterator<Item = (&str, usize)> + '_ {
+        self.buffer_snapshot
+            .graphemes_at(offset)
+            .map(move |grapheme| {
+                let ret = (grapheme, offset);
+                offset += grapheme.len();
+                ret
+            })
+    }
+
+    pub fn reverse_buffer_graphemes_at(
+        &self,
+        mut offset: usize,
+    ) -> impl Iterator<Item = (&str, usize)> + '_ {
         self.buffer_snapshot
             .reversed_graphemes_at(offset)
-            .map(move |ch| {
-                offset -= ch.len_utf8();
-                (ch, offset)
+            .map(move |grapheme| {
+                offset -= grapheme.len();
+                (grapheme, offset)
             })
     }
 
@@ -786,11 +791,11 @@ impl DisplaySnapshot {
 
         let mut indent_size = 0;
         let mut is_blank = false;
-        for c in buffer.graphemes_at(Point::new(range.start.row, 0)) {
-            if c == ' ' || c == '\t' {
+        for grapheme in buffer.graphemes_at(Point::new(range.start.row, 0)) {
+            if grapheme == " " || grapheme == "\t" {
                 indent_size += 1;
             } else {
-                if c == '\n' {
+                if grapheme == "\n" {
                     is_blank = true;
                 }
                 break;

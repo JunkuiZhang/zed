@@ -87,12 +87,12 @@ pub fn delete_object(vim: &mut Vim, object: Object, around: bool, cx: &mut Windo
                     let range = selection.start.to_offset(map, Bias::Left)
                         ..selection.end.to_offset(map, Bias::Right);
                     let contains_only_newlines = map
-                        .buffer_chars_at(range.start)
+                        .buffer_graphemes_at(range.start)
                         .take_while(|(_, p)| p < &range.end)
                         .all(|(char, _)| char == '\n')
                         && !offset_range.is_empty();
                     let end_at_newline = map
-                        .buffer_chars_at(range.end)
+                        .buffer_graphemes_at(range.end)
                         .next()
                         .map(|(c, _)| c == '\n')
                         .unwrap_or(false);

@@ -153,7 +153,7 @@ impl GitBlame {
 
                 if old_point_range.start.column
                     == self.buffer_snapshot.line_len(old_point_range.start.row)
-                    && (new_snapshot.graphemes_at(edit.new.start).next() == Some('\n')
+                    && (new_snapshot.graphemes_at(edit.new.start).next() == Some("\n")
                         || self.buffer_snapshot.line_len(old_point_range.end.row) == 0)
                 {
                     Edit {

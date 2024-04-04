@@ -257,7 +257,7 @@ pub fn previous_word_start(map: &DisplaySnapshot, point: DisplayPoint) -> Displa
 
     find_preceding_boundary_display_point(map, point, FindRange::MultiLine, |left, right| {
         (char_kind(&scope, left) != char_kind(&scope, right) && !right.is_whitespace())
-            || left == '\n'
+            || left == "\n"
     })
 }
 
@@ -269,11 +269,10 @@ pub fn previous_subword_start(map: &DisplaySnapshot, point: DisplayPoint) -> Dis
     let scope = map.buffer_snapshot.language_scope_at(raw_point);
 
     find_preceding_boundary_display_point(map, point, FindRange::MultiLine, |left, right| {
-        let is_word_start =
-            char_kind(&scope, left) != char_kind(&scope, right) && !right.is_whitespace();
+        let is_word_start = char_kind(&scope, left) != char_kind(&scope, right) && !(right == " ");
         let is_subword_start =
-            left == '_' && right != '_' || left.is_lowercase() && right.is_uppercase();
-        is_word_start || is_subword_start || left == '\n'
+            left == "_" && right != "_" || left.is_lowercase() && right.is_uppercase();
+        is_word_start || is_subword_start || left == "\n"
     })
 }
 
@@ -284,8 +283,7 @@ pub fn next_word_end(map: &DisplaySnapshot, point: DisplayPoint) -> DisplayPoint
     let scope = map.buffer_snapshot.language_scope_at(raw_point);
 
     find_boundary(map, point, FindRange::MultiLine, |left, right| {
-        (char_kind(&scope, left) != char_kind(&scope, right) && !left.is_whitespace())
-            || right == '\n'
+        (char_kind(&scope, left) != char_kind(&scope, right) && !(left == " ")) || right == "\n"
     })
 }
 
@@ -297,11 +295,10 @@ pub fn next_subword_end(map: &DisplaySnapshot, point: DisplayPoint) -> DisplayPo
     let scope = map.buffer_snapshot.language_scope_at(raw_point);
 
     find_boundary(map, point, FindRange::MultiLine, |left, right| {
-        let is_word_end =
-            (char_kind(&scope, left) != char_kind(&scope, right)) && !left.is_whitespace();
+        let is_word_end = (char_kind(&scope, left) != char_kind(&scope, right)) && !(left == " ");
         let is_subword_end =
-            left != '_' && right == '_' || left.is_lowercase() && right.is_uppercase();
-        is_word_end || is_subword_end || right == '\n'
+            left != "_" && right == "_" || left.is_lowercase() && right.is_uppercase();
+        is_word_end || is_subword_end || right == "\n"
     })
 }
 
@@ -371,13 +368,13 @@ pub fn find_preceding_boundary_point(
     buffer_snapshot: &MultiBufferSnapshot,
     from: Point,
     find_range: FindRange,
-    mut is_boundary: impl FnMut(char, char) -> bool,
+    mut is_boundary: impl FnMut(&str, &str) -> bool,
 ) -> Point {
     let mut prev_ch = None;
     let mut offset = from.to_offset(&buffer_snapshot);
 
     for ch in buffer_snapshot.reversed_graphemes_at(offset) {
-        if find_range == FindRange::SingleLine && ch == '\n' {
+        if find_range == FindRange::SingleLine && ch == "\n" {
             break;
         }
         if let Some(prev_ch) = prev_ch {
@@ -386,7 +383,7 @@ pub fn find_preceding_boundary_point(
             }
         }
 
-        offset -= ch.len_utf8();
+        offset -= ch.len();
         prev_ch = Some(ch);
     }
 
@@ -401,7 +398,7 @@ pub fn find_preceding_boundary_display_point(
     map: &DisplaySnapshot,
     from: DisplayPoint,
     find_range: FindRange,
-    is_boundary: impl FnMut(char, char) -> bool,
+    is_boundary: impl FnMut(&str, &str) -> bool,
 ) -> DisplayPoint {
     let result = find_preceding_boundary_point(
         &map.buffer_snapshot,
@@ -469,30 +466,32 @@ pub fn find_boundary_exclusive(
 /// Returns an iterator over the characters following a given offset in the [`DisplaySnapshot`].
 /// The returned value also contains a range of the start/end of a returned character in
 /// the [`DisplaySnapshot`]. The offsets are relative to the start of a buffer.
-pub fn chars_after(
+pub fn graphemes_after(
     map: &DisplaySnapshot,
     mut offset: usize,
-) -> impl Iterator<Item = (char, Range<usize>)> + '_ {
-    map.buffer_snapshot.graphemes_at(offset).map(move |ch| {
-        let before = offset;
-        offset = offset + ch.len_utf8();
-        (ch, before..offset)
-    })
+) -> impl Iterator<Item = (&str, Range<usize>)> + '_ {
+    map.buffer_snapshot
+        .graphemes_at(offset)
+        .map(move |grapheme| {
+            let before = offset;
+            offset = offset + grapheme.len();
+            (grapheme, before..offset)
+        })
 }
 
 /// Returns a reverse iterator over the characters following a given offset in the [`DisplaySnapshot`].
 /// The returned value also contains a range of the start/end of a returned character in
 /// the [`DisplaySnapshot`]. The offsets are relative to the start of a buffer.
-pub fn chars_before(
+pub fn graphemes_before(
     map: &DisplaySnapshot,
     mut offset: usize,
-) -> impl Iterator<Item = (char, Range<usize>)> + '_ {
+) -> impl Iterator<Item = (&str, Range<usize>)> + '_ {
     map.buffer_snapshot
         .reversed_graphemes_at(offset)
-        .map(move |ch| {
+        .map(move |grapheme| {
             let after = offset;
-            offset = offset - ch.len_utf8();
-            (ch, offset..after)
+            offset = offset - grapheme.len();
+            (grapheme, offset..after)
         })
 }
 

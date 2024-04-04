@@ -2639,47 +2639,47 @@ impl Editor {
         snapshot: &MultiBufferSnapshot,
         position: Point,
     ) -> Option<String> {
-        let mut chars = Vec::new();
+        let mut graphemes = Vec::new();
         let mut found_colon = false;
-        for char in snapshot.reversed_graphemes_at(position).take(100) {
+        for grapheme in snapshot.reversed_graphemes_at(position).take(100) {
             // Found a possible emoji shortcode in the middle of the buffer
             if found_colon {
-                if char.is_whitespace() {
-                    chars.reverse();
-                    return Some(chars.iter().collect());
+                if grapheme == " " {
+                    graphemes.reverse();
+                    return Some(graphemes.join(""));
                 }
                 // If the previous character is not a whitespace, we are in the middle of a word
                 // and we only want to complete the shortcode if the word is made up of other emojis
                 let mut containing_word = String::new();
-                for ch in snapshot
+                for grap in snapshot
                     .reversed_graphemes_at(position)
-                    .skip(chars.len() + 1)
+                    .skip(graphemes.len() + 1)
                     .take(100)
                 {
-                    if ch.is_whitespace() {
+                    if grap == " " {
                         break;
                     }
-                    containing_word.push(ch);
+                    containing_word.extend(grap);
                 }
                 let containing_word = containing_word.chars().rev().collect::<String>();
                 if util::word_consists_of_emojis(containing_word.as_str()) {
-                    chars.reverse();
-                    return Some(chars.iter().collect());
+                    graphemes.reverse();
+                    return Some(graphemes.join(""));
                 }
             }
 
-            if char.is_whitespace() || !char.is_ascii() {
+            if grapheme == " " || !grapheme.is_ascii() {
                 return None;
             }
-            if char == ':' {
+            if grapheme == ":" {
                 found_colon = true;
             } else {
-                chars.push(char);
+                graphemes.push(grapheme);
             }
         }
         // Found a possible emoji shortcode at the beginning of the buffer
-        chars.reverse();
-        Some(chars.iter().collect())
+        graphemes.reverse();
+        Some(graphemes.join(""))
     }
 
     pub fn newline(&mut self, _: &Newline, cx: &mut ViewContext<Self>) {
@@ -2703,14 +2703,14 @@ impl Editor {
                         {
                             let leading_whitespace_len = buffer
                                 .reversed_graphemes_at(start)
-                                .take_while(|c| c.is_whitespace() && *c != '\n')
-                                .map(|c| c.len_utf8())
+                                .take_while(|c| *c == " " && *c != "\n")
+                                .map(|c| c.len())
                                 .sum::<usize>();
 
                             let trailing_whitespace_len = buffer
                                 .graphemes_at(end)
-                                .take_while(|c| c.is_whitespace() && *c != '\n')
-                                .map(|c| c.len_utf8())
+                                .take_while(|c| *c == " " && *c != "\n")
+                                .map(|c| c.len())
                                 .sum::<usize>();
 
                             let insert_extra_newline =
@@ -2746,7 +2746,7 @@ impl Editor {
                                 let comment_candidate = snapshot
                                     .graphemes_for_range(range)
                                     .skip_while(|c| {
-                                        let should_skip = c.is_whitespace();
+                                        let should_skip = *c == " ";
                                         if should_skip {
                                             index_of_first_non_whitespace += 1;
                                         }
@@ -4031,14 +4031,14 @@ impl Editor {
                     .text
                     .graphemes()
                     .by_ref()
-                    .take_while(|c| c.is_alphabetic())
+                    .take_while(|c| c.chars().next().unwrap().is_alphabetic())
                     .collect::<String>();
                 if partial_completion.is_empty() {
                     partial_completion = completion
                         .text
                         .graphemes()
                         .by_ref()
-                        .take_while(|c| c.is_whitespace() || !c.is_alphabetic())
+                        .take_while(|c| *c == " " || !c.chars().next().unwrap().is_alphabetic())
                         .collect::<String>();
                 }
 

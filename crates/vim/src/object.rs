@@ -350,7 +350,7 @@ fn around_word(
     let offset = relative_to.to_offset(map, Bias::Left);
     let scope = map.buffer_snapshot.language_scope_at(offset);
     let in_word = map
-        .buffer_chars_at(offset)
+        .buffer_graphemes_at(offset)
         .next()
         .map(|(c, _)| char_kind(&scope, c) != CharKind::Whitespace)
         .unwrap_or(false);
@@ -567,14 +567,14 @@ fn sentence(
     let relative_offset = relative_to.to_offset(map, Bias::Left);
     let mut previous_end = relative_offset;
 
-    let mut chars = map.buffer_chars_at(previous_end).peekable();
+    let mut chars = map.buffer_graphemes_at(previous_end).peekable();
 
     // Search backwards for the previous sentence end or current sentence start. Include the character under relative_to
     for (char, offset) in chars
         .peek()
         .cloned()
         .into_iter()
-        .chain(map.reverse_buffer_chars_at(previous_end))
+        .chain(map.reverse_buffer_graphemes_at(previous_end))
     {
         if is_sentence_end(map, offset) {
             break;
@@ -625,7 +625,7 @@ const SENTENCE_END_PUNCTUATION: &[char] = &['.', '!', '?'];
 const SENTENCE_END_FILLERS: &[char] = &[')', ']', '"', '\''];
 const SENTENCE_END_WHITESPACE: &[char] = &[' ', '\t', '\n'];
 fn is_sentence_end(map: &DisplaySnapshot, offset: usize) -> bool {
-    let mut next_chars = map.buffer_chars_at(offset).peekable();
+    let mut next_chars = map.buffer_graphemes_at(offset).peekable();
     if let Some((char, _)) = next_chars.next() {
         // We are at a double newline. This position is a sentence end.
         if char == '\n' && next_chars.peek().map(|(c, _)| c == &'\n').unwrap_or(false) {
@@ -638,7 +638,7 @@ fn is_sentence_end(map: &DisplaySnapshot, offset: usize) -> bool {
         }
     }
 
-    for (char, _) in map.reverse_buffer_chars_at(offset) {
+    for (char, _) in map.reverse_buffer_graphemes_at(offset) {
         if SENTENCE_END_PUNCTUATION.contains(&char) {
             return true;
         }
@@ -661,7 +661,7 @@ fn expand_to_include_whitespace(
     let mut range = range.start.to_offset(map, Bias::Left)..range.end.to_offset(map, Bias::Right);
     let mut whitespace_included = false;
 
-    let mut chars = map.buffer_chars_at(range.end).peekable();
+    let mut chars = map.buffer_graphemes_at(range.end).peekable();
     while let Some((char, offset)) = chars.next() {
         if char == '\n' && stop_at_newline {
             break;
@@ -679,7 +679,7 @@ fn expand_to_include_whitespace(
     }
 
     if !whitespace_included {
-        for (char, point) in map.reverse_buffer_chars_at(range.start) {
+        for (char, point) in map.reverse_buffer_graphemes_at(range.start) {
             if char == '\n' && stop_at_newline {
                 break;
             }
@@ -801,11 +801,11 @@ fn surrounding_markers(
     let mut matched_closes = 0;
     let mut opening = None;
 
-    if let Some((ch, range)) = movement::chars_after(map, point).next() {
+    if let Some((ch, range)) = movement::graphemes_after(map, point).next() {
         if ch == open_marker {
             if open_marker == close_marker {
                 let mut total = 0;
-                for (ch, _) in movement::chars_before(map, point) {
+                for (ch, _) in movement::graphemes_before(map, point) {
                     if ch == '\n' {
                         break;
                     }
@@ -823,7 +823,7 @@ fn surrounding_markers(
     }
 
     if opening.is_none() {
-        for (ch, range) in movement::chars_before(map, point) {
+        for (ch, range) in movement::graphemes_before(map, point) {
             if ch == '\n' && !search_across_lines {
                 break;
             }
@@ -841,7 +841,7 @@ fn surrounding_markers(
     }
 
     if opening.is_none() {
-        for (ch, range) in movement::chars_after(map, point) {
+        for (ch, range) in movement::graphemes_after(map, point) {
             if ch == open_marker {
                 opening = Some(range);
                 break;
@@ -858,7 +858,7 @@ fn surrounding_markers(
     let mut matched_opens = 0;
     let mut closing = None;
 
-    for (ch, range) in movement::chars_after(map, opening.end) {
+    for (ch, range) in movement::graphemes_after(map, opening.end) {
         if ch == '\n' && !search_across_lines {
             break;
         }
@@ -881,7 +881,7 @@ fn surrounding_markers(
     if around && !search_across_lines {
         let mut found = false;
 
-        for (ch, range) in movement::chars_after(map, closing.end) {
+        for (ch, range) in movement::graphemes_after(map, closing.end) {
             if ch.is_whitespace() && ch != '\n' {
                 found = true;
                 closing.end = range.end;
@@ -891,7 +891,7 @@ fn surrounding_markers(
         }
 
         if !found {
-            for (ch, range) in movement::chars_before(map, opening.start) {
+            for (ch, range) in movement::graphemes_before(map, opening.start) {
                 if ch.is_whitespace() && ch != '\n' {
                     opening.start = range.start
                 } else {
@@ -902,13 +902,13 @@ fn surrounding_markers(
     }
 
     if !around && search_across_lines {
-        if let Some((ch, range)) = movement::chars_after(map, opening.end).next() {
+        if let Some((ch, range)) = movement::graphemes_after(map, opening.end).next() {
             if ch == '\n' {
                 opening.end = range.end
             }
         }
 
-        for (ch, range) in movement::chars_before(map, closing.start) {
+        for (ch, range) in movement::graphemes_before(map, closing.start) {
             if !ch.is_whitespace() {
                 break;
             }

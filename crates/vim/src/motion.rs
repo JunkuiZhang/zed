@@ -1311,7 +1311,7 @@ pub(crate) fn first_non_whitespace(
 ) -> DisplayPoint {
     let mut start_offset = start_of_line(map, display_lines, from).to_offset(map, Bias::Left);
     let scope = map.buffer_snapshot.language_scope_at(from.to_point(map));
-    for (ch, offset) in map.buffer_chars_at(start_offset) {
+    for (ch, offset) in map.buffer_graphemes_at(start_offset) {
         if ch == '\n' {
             return from;
         }

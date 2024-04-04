@@ -643,27 +643,27 @@ pub(crate) fn find_url(
     let mut found_start = false;
     let mut found_end = false;
 
-    for ch in snapshot.reversed_graphemes_at(offset).take(LIMIT) {
-        if ch.is_whitespace() {
+    for grapheme in snapshot.reversed_graphemes_at(offset).take(LIMIT) {
+        if grapheme == " " {
             found_start = true;
             break;
         }
-        token_start -= ch.len_utf8();
+        token_start -= grapheme.len();
     }
     // Check if we didn't find the starting whitespace or if we didn't reach the start of the buffer
     if !found_start && token_start != 0 {
         return None;
     }
 
-    for ch in snapshot
+    for grapheme in snapshot
         .graphemes_at(offset)
         .take(LIMIT - (offset - token_start))
     {
-        if ch.is_whitespace() {
+        if grapheme == " " {
             found_end = true;
             break;
         }
-        token_end += ch.len_utf8();
+        token_end += grapheme.len();
     }
     // Check if we didn't find the ending whitespace or if we read more or equal than LIMIT
     // which at this point would happen only if we reached the end of buffer

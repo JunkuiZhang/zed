@@ -63,7 +63,7 @@ pub fn change_motion(vim: &mut Vim, motion: Motion, times: Option<usize>, cx: &m
                             let scope = map
                                 .buffer_snapshot
                                 .language_scope_at(selection.start.to_point(&map));
-                            for (ch, offset) in map.buffer_chars_at(start_offset) {
+                            for (ch, offset) in map.buffer_graphemes_at(start_offset) {
                                 if ch == '\n' || char_kind(&scope, ch) != CharKind::Whitespace {
                                     break;
                                 }
@@ -131,7 +131,7 @@ fn expand_changed_word_selection(
             .buffer_snapshot
             .language_scope_at(selection.start.to_point(map));
         let in_word = map
-            .buffer_chars_at(selection.head().to_offset(map, Bias::Left))
+            .buffer_graphemes_at(selection.head().to_offset(map, Bias::Left))
             .next()
             .map(|(c, _)| char_kind(&scope, c) != CharKind::Whitespace)
             .unwrap_or_default();
