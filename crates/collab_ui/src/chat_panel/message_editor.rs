@@ -349,7 +349,8 @@ impl MessageEditor {
 
         let Some(query) = buffer.update(cx, |buffer, _| {
             let mut query = String::new();
-            for ch in buffer.reversed_graphemes_at(end_offset).take(100) {
+            for grapheme in buffer.reversed_graphemes_at(end_offset).take(100) {
+                let ch = grapheme.chars().next().unwrap();
                 if ch == '@' {
                     return Some(query.chars().rev().collect::<String>());
                 }
@@ -412,7 +413,8 @@ impl MessageEditor {
 
         let Some(query) = buffer.update(cx, |buffer, _| {
             let mut query = String::new();
-            for ch in buffer.reversed_graphemes_at(end_offset).take(100) {
+            for grapheme in buffer.reversed_graphemes_at(end_offset).take(100) {
+                let ch = grapheme.chars().next().unwrap();
                 if ch == ':' {
                     let next_char = buffer
                         .reversed_graphemes_at(end_offset - query.len() - 1)
