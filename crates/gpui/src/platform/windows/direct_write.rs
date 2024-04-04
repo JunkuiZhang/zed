@@ -147,7 +147,9 @@ impl PlatformTextSystem for DirectWriteTextSystem {
     }
 
     fn layout_line(&self, text: &str, font_size: Pixels, runs: &[FontRun]) -> LineLayout {
-        self.0.write().layout_line(text, font_size, runs)
+        let ret = self.0.write().layout_line(text, font_size, runs);
+        println!("--> Gen layout:\n\t{:#?}", ret);
+        ret
     }
 
     fn wrap_line(
@@ -269,6 +271,7 @@ impl DirectWriteState {
             return LineLayout::default();
         }
         unsafe {
+            println!("->{}<-Font run: {:#?}", text, font_runs);
             let text_renderer_inner = self.components.text_renderer_inner.clone();
             text_renderer_inner.write().reset();
             let locale_wide = self
@@ -918,10 +921,18 @@ impl IDWriteTextRenderer_Impl for TextRenderer {
         _clientdrawingeffect: Option<&windows::core::IUnknown>,
     ) -> windows::core::Result<()> {
         unsafe {
+            println!("=============================================");
             let glyphrun = &*glyphrun;
             let desc = &*glyphrundescription;
             let glyph_count = glyphrun.glyphCount as usize;
             let utf16_length_per_glyph = desc.stringLength as usize / glyph_count;
+            println!(
+                "{} glyphs, per: {}, string: {:?}, Desc: {:#?}",
+                glyph_count,
+                utf16_length_per_glyph,
+                desc.string.to_string(),
+                desc
+            );
 
             if glyphrun.fontFace.is_none() {
                 return Ok(());
@@ -939,6 +950,8 @@ impl IDWriteTextRenderer_Impl for TextRenderer {
             let mut glyphs = SmallVec::new();
             for index in 0..glyph_count {
                 let id = GlyphId(*glyphrun.glyphIndices.add(index) as u32);
+                let cluster = *desc.clusterMap.add(index);
+                println!("glyph id: {}, index: {}, cluster: {}", id.0, index, cluster);
                 glyphs.push(RendererShapedGlyph {
                     id,
                     position: point(px(position), px(0.0)),

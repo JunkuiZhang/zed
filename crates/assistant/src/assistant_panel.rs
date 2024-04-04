@@ -1724,7 +1724,7 @@ impl Conversation {
             let mut suffix_start = None;
             if range.start > message.offset_range.start && range.end < message.offset_range.end - 1
             {
-                if self.buffer.read(cx).chars_at(range.end).next() == Some('\n') {
+                if self.buffer.read(cx).graphemes_at(range.end).next() == Some('\n') {
                     suffix_start = Some(range.end + 1);
                 } else if self.buffer.read(cx).reversed_chars_at(range.end).next() == Some('\n') {
                     suffix_start = Some(range.end);
@@ -1766,7 +1766,7 @@ impl Conversation {
                     if range.start > message.offset_range.start
                         && range.end < message.offset_range.end - 1
                     {
-                        if self.buffer.read(cx).chars_at(range.start).next() == Some('\n') {
+                        if self.buffer.read(cx).graphemes_at(range.start).next() == Some('\n') {
                             prefix_end = Some(range.start + 1);
                         } else if self.buffer.read(cx).reversed_chars_at(range.start).next()
                             == Some('\n')

@@ -830,7 +830,7 @@ impl DisplaySnapshot {
 
         let mut indent_size = 0;
         let mut is_blank = false;
-        for c in buffer.chars_at(Point::new(range.start.row, 0)) {
+        for c in buffer.graphemes_at(Point::new(range.start.row, 0)) {
             if c == ' ' || c == '\t' {
                 indent_size += 1;
             } else {

@@ -154,7 +154,10 @@ fn task_context(
                         .map(|worktree| worktree.read(cx).abs_path().to_string_lossy().to_string())
                 });
 
-                let selected_text = buffer.read(cx).chars_for_range(selection_range).collect();
+                let selected_text = buffer
+                    .read(cx)
+                    .graphemes_for_range(selection_range)
+                    .collect();
 
                 let mut task_variables = TaskVariables::from_iter([
                     ("ZED_ROW".into(), row.to_string()),

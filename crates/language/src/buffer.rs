@@ -53,6 +53,7 @@ use theme::SyntaxTheme;
 #[cfg(any(test, feature = "test-support"))]
 use util::RandomCharIter;
 use util::RangeExt;
+use unicode_segmentation::UnicodeSegmentation;
 
 #[cfg(any(test, feature = "test-support"))]
 pub use {tree_sitter_rust, tree_sitter_typescript};
@@ -1806,7 +1807,7 @@ impl Buffer {
                         original_indent_column =
                             Some(original_indent_columns.get(ix).copied().unwrap_or_else(|| {
                                 indent_size_for_text(
-                                    new_text[range_of_insertion_to_indent.clone()].chars(),
+                                    new_text[range_of_insertion_to_indent.clone()].graphemes(true),
                                 )
                                 .len
                             }));
@@ -2592,7 +2593,7 @@ impl BufferSnapshot {
     pub fn surrounding_word<T: ToOffset>(&self, start: T) -> (Range<usize>, Option<CharKind>) {
         let mut start = start.to_offset(self);
         let mut end = start;
-        let mut next_chars = self.chars_at(start).peekable();
+        let mut next_chars = self.graphemes_at(start).peekable();
         let mut prev_chars = self.reversed_chars_at(start).peekable();
 
         let scope = self.language_scope_at(start);
@@ -2603,16 +2604,16 @@ impl BufferSnapshot {
         );
 
         for ch in prev_chars {
-            if Some(kind(ch)) == word_kind && ch != '\n' {
-                start -= ch.len_utf8();
+            if Some(kind(ch)) == word_kind && ch != "\n" {
+                start -= ch.len();
             } else {
                 break;
             }
         }
 
         for ch in next_chars {
-            if Some(kind(ch)) == word_kind && ch != '\n' {
-                end += ch.len_utf8();
+            if Some(kind(ch)) == word_kind && ch != "\n" {
+                end += ch.len();
             } else {
                 break;
             }
@@ -3192,12 +3193,13 @@ impl BufferSnapshot {
 }
 
 fn indent_size_for_line(text: &text::BufferSnapshot, row: u32) -> IndentSize {
-    indent_size_for_text(text.chars_at(Point::new(row, 0)))
+    indent_size_for_text(text.graphemes_at(Point::new(row, 0)))
 }
 
-fn indent_size_for_text(text: impl Iterator<Item = char>) -> IndentSize {
+fn indent_size_for_text<'a>(text: impl Iterator<Item = &'a str>) -> IndentSize {
     let mut result = IndentSize::spaces(0);
-    for c in text {
+    for grapheme in text {
+        let c = grapheme.chars().next().unwrap();
         let kind = match c {
             ' ' => IndentKind::Space,
             '\t' => IndentKind::Tab,
@@ -3604,7 +3606,8 @@ pub(crate) fn contiguous_ranges(
 /// Returns the [CharKind] for the given character. When a scope is provided,
 /// the function checks if the character is considered a word character
 /// based on the language scope's word character settings.
-pub fn char_kind(scope: &Option<LanguageScope>, c: char) -> CharKind {
+pub fn char_kind(scope: &Option<LanguageScope>, c: &str) -> CharKind {
+    let c = c.chars().next().unwrap();
     if c.is_whitespace() {
         return CharKind::Whitespace;
     } else if c.is_alphanumeric() || c == '_' {

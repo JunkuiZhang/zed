@@ -677,9 +677,11 @@ impl<'a> MutableSelectionsCollection<'a> {
                 if selection != moved_selection {
                     changed = true;
                 }
+                println!("slection: {:?}, {:?}", selection, moved_selection);
                 moved_selection
             })
             .collect();
+        println!("Move res: {:?}", selections);
 
         if changed {
             self.select(selections)

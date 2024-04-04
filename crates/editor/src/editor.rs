@@ -2990,7 +2990,7 @@ impl Editor {
 
                                 let mut index_of_first_non_whitespace = 0;
                                 let comment_candidate = snapshot
-                                    .chars_for_range(range)
+                                    .graphemes_for_range(range)
                                     .skip_while(|c| {
                                         let should_skip = c.is_whitespace();
                                         if should_skip {

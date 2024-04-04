@@ -39,6 +39,7 @@ pub use subscription::*;
 pub use sum_tree::Bias;
 use sum_tree::{FilterCursor, SumTree, TreeMap};
 use undo_map::UndoMap;
+use unicode_segmentation::UnicodeSegmentation;
 use util::ResultExt;
 
 #[cfg(any(test, feature = "test-support"))]
@@ -1685,20 +1686,24 @@ impl BufferSnapshot {
         self.len() == 0
     }
 
-    pub fn chars(&self) -> impl Iterator<Item = char> + '_ {
-        self.chars_at(0)
+    pub fn graphemes(&self) -> impl Iterator<Item = &str> + '_ {
+        self.graphemes_at(0)
     }
 
-    pub fn chars_for_range<T: ToOffset>(&self, range: Range<T>) -> impl Iterator<Item = char> + '_ {
-        self.text_for_range(range).flat_map(str::chars)
-    }
-
-    pub fn reversed_chars_for_range<T: ToOffset>(
+    pub fn graphemes_for_range<T: ToOffset>(
         &self,
         range: Range<T>,
-    ) -> impl Iterator<Item = char> + '_ {
+    ) -> impl Iterator<Item = &str> + '_ {
+        self.text_for_range(range)
+            .flat_map(|text| text.graphemes(true))
+    }
+
+    pub fn reversed_graphemes_for_range<T: ToOffset>(
+        &self,
+        range: Range<T>,
+    ) -> impl Iterator<Item = &str> + '_ {
         self.reversed_chunks_in_range(range)
-            .flat_map(|chunk| chunk.chars().rev())
+            .flat_map(|chunk| chunk.graphemes(true).rev())
     }
 
     pub fn contains_str_at<T>(&self, position: T, needle: &str) -> bool
@@ -1727,9 +1732,15 @@ impl BufferSnapshot {
             .take_while(|&len| len <= offset)
             .filter(|&len| {
                 let left = self
-                    .chars_for_range(offset - len..offset)
+                    .graphemes_for_range(offset - len..offset)
+                    // .flat_map(|grapheme| grapheme.chars().nth(0).unwrap().to_lowercase());
+                    .flat_map(str::chars)
                     .flat_map(char::to_lowercase);
-                let right = needle[..len].chars().flat_map(char::to_lowercase);
+                let right = needle[..len]
+                    .graphemes(true)
+                    // .flat_map(|grapheme| grapheme.chars().nth(0).unwrap().to_lowercase());
+                    .flat_map(str::chars)
+                    .flat_map(char::to_lowercase);
                 left.eq(right)
             })
             .last()
@@ -1807,14 +1818,14 @@ impl BufferSnapshot {
         &self.version
     }
 
-    pub fn chars_at<T: ToOffset>(&self, position: T) -> impl Iterator<Item = char> + '_ {
+    pub fn graphemes_at<T: ToOffset>(&self, position: T) -> impl Iterator<Item = &str> + '_ {
         let offset = position.to_offset(self);
-        self.visible_text.chars_at(offset)
+        self.visible_text.graphemes_at(offset)
     }
 
-    pub fn reversed_chars_at<T: ToOffset>(&self, position: T) -> impl Iterator<Item = char> + '_ {
+    pub fn reversed_chars_at<T: ToOffset>(&self, position: T) -> impl Iterator<Item = &str> + '_ {
         let offset = position.to_offset(self);
-        self.visible_text.reversed_chars_at(offset)
+        self.visible_text.reversed_graphemes_at(offset)
     }
 
     pub fn reversed_chunks_in_range<T: ToOffset>(&self, range: Range<T>) -> rope::Chunks {

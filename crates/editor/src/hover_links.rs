@@ -656,7 +656,7 @@ pub(crate) fn find_url(
     }
 
     for ch in snapshot
-        .chars_at(offset)
+        .graphemes_at(offset)
         .take(LIMIT - (offset - token_start))
     {
         if ch.is_whitespace() {

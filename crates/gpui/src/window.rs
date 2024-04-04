@@ -1327,6 +1327,7 @@ impl<'a> WindowContext<'a> {
                 .rendered_frame
                 .dispatch_tree
                 .dispatch_key(&key_down_event.keystroke, &dispatch_path);
+            println!("Dispatch key: {:?}, {}", bindings, pending);
 
             if pending {
                 let mut currently_pending = self.window.pending_input.take().unwrap_or_default();
