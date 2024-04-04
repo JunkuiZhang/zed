@@ -1176,7 +1176,7 @@ pub mod tests {
                 assert_eq!(prev_buffer_bound.column, 0);
                 assert_eq!(prev_display_bound.column(), 0);
                 if next_buffer_bound < buffer.max_point() {
-                    assert_eq!(buffer.graphemes_at(next_buffer_bound).next(), Some('\n'));
+                    assert_eq!(buffer.graphemes_at(next_buffer_bound).next(), Some("\n"));
                 }
 
                 assert_eq!(

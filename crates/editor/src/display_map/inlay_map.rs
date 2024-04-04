@@ -1804,10 +1804,10 @@ mod tests {
                 );
 
                 if let Some(ch) = buffer_chars.next() {
-                    if ch == '\n' {
+                    if ch == "\n" {
                         buffer_point += Point::new(1, 0);
                     } else {
-                        buffer_point += Point::new(0, ch.len_utf8() as u32);
+                        buffer_point += Point::new(0, ch.len() as u32);
                     }
 
                     // Ensure that moving forward in the buffer always moves the inlay point forward as well.
@@ -1835,8 +1835,7 @@ mod tests {
                     inlay_offset
                 );
 
-                let mut bytes = [0; 4];
-                for byte in ch.encode_utf8(&mut bytes).as_bytes() {
+                for byte in ch.as_bytes() {
                     inlay_offset.0 += 1;
                     if *byte == b'\n' {
                         inlay_point.0 += Point::new(1, 0);

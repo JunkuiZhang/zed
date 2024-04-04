@@ -642,7 +642,7 @@ mod tests {
         fn assert(
             marked_text: &str,
             cx: &mut gpui::AppContext,
-            is_boundary: impl FnMut(char, char) -> bool,
+            is_boundary: impl FnMut(&str, &str) -> bool,
         ) {
             let (snapshot, display_points) = marked_display_snapshot(marked_text, cx);
             assert_eq!(
@@ -657,14 +657,14 @@ mod tests {
         }
 
         assert("abcˇdef\ngh\nijˇk", cx, |left, right| {
-            left == 'c' && right == 'd'
+            left == "c" && right == "d"
         });
         assert("abcdef\nˇgh\nijˇk", cx, |left, right| {
-            left == '\n' && right == 'g'
+            left == "\n" && right == "g"
         });
         let mut line_count = 0;
         assert("abcdef\nˇgh\nijˇk", cx, |left, _| {
-            if left == '\n' {
+            if left == "\n" {
                 line_count += 1;
                 line_count == 2
             } else {
@@ -723,7 +723,7 @@ mod tests {
                 &snapshot,
                 buffer_snapshot.len().to_display_point(&snapshot),
                 FindRange::MultiLine,
-                |left, _| left == 'e',
+                |left, _| left == "e",
             ),
             snapshot
                 .buffer_snapshot
@@ -799,7 +799,7 @@ mod tests {
         fn assert(
             marked_text: &str,
             cx: &mut gpui::AppContext,
-            is_boundary: impl FnMut(char, char) -> bool,
+            is_boundary: impl FnMut(&str, &str) -> bool,
         ) {
             let (snapshot, display_points) = marked_display_snapshot(marked_text, cx);
             assert_eq!(
@@ -814,14 +814,14 @@ mod tests {
         }
 
         assert("abcˇdef\ngh\nijˇk", cx, |left, right| {
-            left == 'j' && right == 'k'
+            left == "j" && right == "k"
         });
         assert("abˇcdef\ngh\nˇijk", cx, |left, right| {
-            left == '\n' && right == 'i'
+            left == "\n" && right == "i"
         });
         let mut line_count = 0;
         assert("abcˇdef\ngh\nˇijk", cx, |left, _| {
-            if left == '\n' {
+            if left == "\n" {
                 line_count += 1;
                 line_count == 2
             } else {
