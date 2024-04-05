@@ -944,10 +944,9 @@ impl Chunk {
             println!("Checking row: {row}\n\t{line}");
             if row == target.row as usize {
                 let mut column = target.column.min(line.len() as u32);
-                let mut cursor = GraphemeCursor::new(0, line.len(), true);
+                let mut cursor = GraphemeCursor::new(column as usize, line.len(), true);
                 println!("Pre process: {column}");
                 while !cursor.is_boundary(line, 0).unwrap() {
-                    cursor.set_cursor(column as usize);
                     match bias {
                         Bias::Left => {
                             column = cursor
@@ -963,6 +962,7 @@ impl Chunk {
                         }
                     }
                 }
+                cursor.set_cursor(column as usize);
                 println!("Post process: {column}");
                 return Point::new(row as u32, column);
             }
