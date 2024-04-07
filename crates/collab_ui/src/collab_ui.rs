@@ -14,7 +14,7 @@ pub use collab_panel::CollabPanel;
 pub use collab_titlebar_item::CollabTitlebarItem;
 use gpui::{
     actions, point, AppContext, DevicePixels, Pixels, PlatformDisplay, Size, Task,
-    WindowBackgroundAppearance, WindowContext, WindowKind, WindowOptions,
+    WindowBackgroundAppearance, WindowContext, WindowKind, WindowOptions, WindowSize,
 };
 use panel_settings::MessageEditorSettings;
 pub use panel_settings::{
@@ -113,14 +113,13 @@ fn notification_window_options(
     };
 
     WindowOptions {
-        bounds: Some(bounds),
+        size: WindowSize::Windowed(Some(bounds)),
         titlebar: None,
         focus: false,
         show: true,
         kind: WindowKind::PopUp,
         is_movable: false,
         display_id: Some(screen.id()),
-        fullscreen: false,
         window_background: WindowBackgroundAppearance::default(),
     }
 }

@@ -389,19 +389,23 @@ impl Window {
         options: WindowOptions,
         cx: &mut AppContext,
     ) -> Self {
+        println!("=> Create options: {:#?}", options);
+        // panic!();
         let WindowOptions {
-            bounds,
+            size,
             titlebar,
             focus,
             show,
             kind,
             is_movable,
             display_id,
-            fullscreen,
             window_background,
         } = options;
-
-        let bounds = bounds.unwrap_or_else(|| default_bounds(display_id, cx));
+        let bounds = if let crate::WindowSize::Windowed(Some(bounds)) = size {
+            bounds
+        } else {
+            default_bounds(display_id, cx)
+        };
         let platform_window = cx.platform.open_window(
             handle,
             WindowParams {
@@ -429,8 +433,11 @@ impl Window {
         let next_frame_callbacks: Rc<RefCell<Vec<FrameCallback>>> = Default::default();
         let last_input_timestamp = Rc::new(Cell::new(Instant::now()));
 
-        if fullscreen {
-            platform_window.toggle_fullscreen();
+        match size {
+            crate::WindowSize::Windowed(_) => {}
+            crate::WindowSize::Minimized => platform_window.minimize(),
+            crate::WindowSize::Maximized => platform_window.minimize(),
+            crate::WindowSize::FullScreen => platform_window.toggle_fullscreen(),
         }
 
         platform_window.on_close(Box::new({

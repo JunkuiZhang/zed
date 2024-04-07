@@ -1200,6 +1200,8 @@ impl WindowsWindow {
         handle: AnyWindowHandle,
         options: WindowParams,
     ) -> Self {
+        println!("========================================");
+        println!("Options: {:#?}", options);
         let classname = register_wnd_class(platform_inner.icon);
         let hide_title_bar = options
             .titlebar
