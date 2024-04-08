@@ -383,6 +383,23 @@ fn default_bounds(display_id: Option<DisplayId>, cx: &mut AppContext) -> Bounds<
         })
 }
 
+fn translate_state(
+    size: crate::WindowSize,
+    display_id: Option<DisplayId>,
+    cx: &mut AppContext,
+) -> crate::WindowOpenState {
+    match size {
+        crate::WindowSize::Windowed(bounds) => crate::WindowOpenState::Windowed(
+            bounds.unwrap_or_else(|| default_bounds(display_id, cx)),
+        ),
+        crate::WindowSize::Minimized => {
+            crate::WindowOpenState::Windowed(default_bounds(display_id, cx))
+        }
+        crate::WindowSize::Maximized => crate::WindowOpenState::Maximized,
+        crate::WindowSize::FullScreen => crate::WindowOpenState::FullScreen,
+    }
+}
+
 impl Window {
     pub(crate) fn new(
         handle: AnyWindowHandle,
@@ -401,15 +418,11 @@ impl Window {
             display_id,
             window_background,
         } = options;
-        let bounds = if let crate::WindowSize::Windowed(Some(bounds)) = size {
-            bounds
-        } else {
-            default_bounds(display_id, cx)
-        };
+        let open_state = translate_state(size, display_id, cx);
         let platform_window = cx.platform.open_window(
             handle,
             WindowParams {
-                bounds,
+                open_state,
                 titlebar,
                 kind,
                 is_movable,
@@ -432,13 +445,6 @@ impl Window {
         let needs_present = Rc::new(Cell::new(false));
         let next_frame_callbacks: Rc<RefCell<Vec<FrameCallback>>> = Default::default();
         let last_input_timestamp = Rc::new(Cell::new(Instant::now()));
-
-        match size {
-            crate::WindowSize::Windowed(_) => {}
-            crate::WindowSize::Minimized => platform_window.minimize(),
-            crate::WindowSize::Maximized => platform_window.minimize(),
-            crate::WindowSize::FullScreen => platform_window.toggle_fullscreen(),
-        }
 
         platform_window.on_close(Box::new({
             let mut cx = cx.to_async();

@@ -71,7 +71,7 @@ impl Bind for SerializedWindowsSize {
     fn bind(&self, statement: &Statement, start_index: i32) -> Result<i32> {
         match self.0 {
             WindowSize::Windowed(bounds) => {
-                let next_index = statement.bind(&"Fixed", start_index)?;
+                let next_index = statement.bind(&"Windowed", start_index)?;
                 let bounds = bounds.unwrap();
                 statement.bind(
                     &(
@@ -674,7 +674,7 @@ impl WorkspaceDb {
     }
 
     query! {
-        pub(crate) async fn set_window_bounds(workspace_id: WorkspaceId, bounds: SerializedWindowsSize, display: Uuid) -> Result<()> {
+        pub(crate) async fn set_window_state(workspace_id: WorkspaceId, bounds: SerializedWindowsSize, display: Uuid) -> Result<()> {
             UPDATE workspaces
             SET window_state = ?2,
                 window_x = ?3,

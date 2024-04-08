@@ -1198,18 +1198,18 @@ impl WindowsWindow {
     pub(crate) fn new(
         platform_inner: Rc<WindowsPlatformInner>,
         handle: AnyWindowHandle,
-        options: WindowParams,
+        params: WindowParams,
     ) -> Self {
         println!("========================================");
-        println!("Options: {:#?}", options);
+        println!("Options: {:#?}", params);
         let classname = register_wnd_class(platform_inner.icon);
-        let hide_title_bar = options
+        let hide_title_bar = params
             .titlebar
             .as_ref()
             .map(|titlebar| titlebar.appears_transparent)
             .unwrap_or(false);
         let windowname = HSTRING::from(
-            options
+            params
                 .titlebar
                 .as_ref()
                 .and_then(|titlebar| titlebar.title.as_ref())
@@ -1217,10 +1217,20 @@ impl WindowsWindow {
                 .unwrap_or(""),
         );
         let dwstyle = WS_THICKFRAME | WS_SYSMENU | WS_MAXIMIZEBOX | WS_MINIMIZEBOX;
-        let x = options.bounds.origin.x.0;
-        let y = options.bounds.origin.y.0;
-        let nwidth = options.bounds.size.width.0;
-        let nheight = options.bounds.size.height.0;
+        let (x, y, nwidth, nheight) = match params.open_state {
+            WindowOpenState::Windowed(bounds) => (
+                bounds.origin.x.0,
+                bounds.origin.y.0,
+                bounds.size.width.0,
+                bounds.size.height.0,
+            ),
+            WindowOpenState::Maximized => {
+                (CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT)
+            }
+            WindowOpenState::FullScreen => {
+                (CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT)
+            }
+        };
         let hwndparent = HWND::default();
         let hmenu = HMENU::default();
         let hinstance = HINSTANCE::default();
@@ -1269,7 +1279,16 @@ impl WindowsWindow {
             .write()
             .push(wnd.inner.hwnd);
 
-        unsafe { ShowWindow(wnd.inner.hwnd, SW_SHOW) };
+        let show_cmd = match params.open_state {
+            WindowOpenState::Windowed(_) => SW_SHOW,
+            WindowOpenState::Maximized => SW_SHOWMAXIMIZED,
+            WindowOpenState::FullScreen => SW_SHOW,
+        };
+        unsafe { ShowWindow(wnd.inner.hwnd, show_cmd) };
+        if params.open_state == WindowOpenState::FullScreen {
+            wnd.toggle_fullscreen();
+        }
+
         wnd
     }
 }

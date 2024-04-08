@@ -751,30 +751,10 @@ impl Workspace {
                     };
 
                     if let Some(display_uuid) = display.uuid().log_err() {
-                        // Only update the window bounds when not full screen,
-                        // so we can remember the last non-fullscreen bounds
-                        // across restarts
                         println!("-----------------------------------------");
-                        println!("Saving: {:?}", fullscreen);
-                        // if fullscreen {
-                        //     cx.background_executor()
-                        //         .spawn(DB.set_fullscreen(workspace_id, true))
-                        //         .detach_and_log_err(cx);
-                        // } else if !cx.is_minimized() {
-                        //     cx.background_executor()
-                        //         .spawn(DB.set_fullscreen(workspace_id, false))
-                        //         .detach_and_log_err(cx);
-                        //     cx.background_executor()
-                        //         .spawn(DB.set_window_bounds(
-                        //             workspace_id,
-                        //             SerializedWindowsSize(window_bounds),
-                        //             display_uuid,
-                        //         ))
-                        //         .detach_and_log_err(cx);
-                        // }
-                        println!("Saving: {:#?}", window_size);
+                        println!("Saving with id {:?}: {:#?}", workspace_id, window_size);
                         cx.background_executor()
-                            .spawn(DB.set_window_bounds(workspace_id, window_size, display_uuid))
+                            .spawn(DB.set_window_state(workspace_id, window_size, display_uuid))
                             .detach_and_log_err(cx);
                     }
                 }
@@ -920,6 +900,7 @@ impl Workspace {
                         .and_then(|workspace| Some((workspace.display?, workspace.size?)))
                         .or_else(|| {
                             let (display, bounds, fullscreen) = DB.last_window().log_err()?;
+                            println!("last window: {:?}, {:?}", display, bounds);
                             Some((display?, bounds?))
                         });
                     println!("Serialized workspace: {:?}", serialized_workspace);

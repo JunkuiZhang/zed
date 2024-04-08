@@ -552,7 +552,7 @@ pub enum WindowSize {
 #[derive(Debug)]
 pub(crate) struct WindowParams {
     ///
-    pub bounds: Bounds<DevicePixels>,
+    pub open_state: WindowOpenState,
 
     /// The titlebar configuration of the window
     pub titlebar: Option<TitlebarOptions>,
@@ -570,6 +570,17 @@ pub(crate) struct WindowParams {
     pub display_id: Option<DisplayId>,
 
     pub window_background: WindowBackgroundAppearance,
+}
+
+/// TODO:
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum WindowOpenState {
+    /// windowed
+    Windowed(Bounds<DevicePixels>),
+    /// maximized
+    Maximized,
+    /// fullscreen
+    FullScreen,
 }
 
 impl Default for WindowOptions {
