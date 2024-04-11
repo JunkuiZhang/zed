@@ -779,3 +779,105 @@ mod tests {
         assert_eq!(layout.runs[0].glyphs[1].id, GlyphId(69u32)); // b
     }
 }
+
+#[cfg(test)]
+mod benchmarks {
+    use rand::{rngs::StdRng, Rng, SeedableRng};
+    use util::RandomCharIter;
+
+    use crate::{
+        px, Font, FontFeatures, FontRun, FontStyle, FontWeight, GlyphId, MacTextSystem,
+        PlatformTextSystem, Point, RenderGlyphParams,
+    };
+
+    fn generate_random_text(mut rng: StdRng, text_len: usize) -> String {
+        RandomCharIter::new(&mut rng).take(text_len).collect()
+    }
+
+    #[test]
+    fn text_system_benchmarks() {
+        static SEED: u64 = 9999;
+
+        let mut rng = StdRng::seed_from_u64(SEED);
+        let mut sizes = Vec::new();
+        for _ in 0..100 {
+            sizes.push(rng.gen_range(512..1024));
+        }
+
+        let text_system = MacTextSystem::new();
+        let font = Font {
+            family: "Maple Mono NF".into(),
+            features: FontFeatures::default(),
+            weight: FontWeight::NORMAL,
+            style: FontStyle::Normal,
+        };
+        let font_id = text_system.font_id(&font).unwrap();
+        {
+            println!("Layout benches");
+            let mut result = Vec::new();
+            for size in sizes.iter() {
+                let start = std::time::Instant::now();
+                let text = generate_random_text(rng.clone(), *size);
+                let runs = vec![FontRun {
+                    len: text.len(),
+                    font_id: font_id,
+                }];
+                text_system.layout_line(&text, px(16.0), &runs);
+                result.push(start.elapsed().as_millis());
+            }
+            // macos: 10
+            println!(
+                "Layout benches result: {}ms",
+                result.iter().sum::<u128>() / result.len() as u128
+            );
+        }
+
+        {
+            println!("Raster glyph");
+            let mut id_res = Vec::new();
+            let mut bounds_res = Vec::new();
+            let mut raster_res = Vec::new();
+            for size in sizes.iter() {
+                let text = generate_random_text(rng.clone(), *size);
+                let mut inner_id_res = Vec::new();
+                let mut inner_bounds_res = Vec::new();
+                let mut inner_raster_res = Vec::new();
+                for ch in text.chars() {
+                    let glyph_start = std::time::Instant::now();
+                    let glyph_id = text_system
+                        .glyph_for_char(font_id, ch)
+                        .unwrap_or(GlyphId(10));
+                    inner_id_res.push(glyph_start.elapsed().as_micros());
+                    let params = RenderGlyphParams {
+                        font_id,
+                        glyph_id,
+                        font_size: px(16.0),
+                        subpixel_variant: Point::default(),
+                        scale_factor: 1.0,
+                        is_emoji: false,
+                    };
+                    let bounds_start = std::time::Instant::now();
+                    let bounds = text_system.glyph_raster_bounds(&params).unwrap();
+                    inner_bounds_res.push(bounds_start.elapsed().as_micros());
+                    let raster_start = std::time::Instant::now();
+                    let Ok(_) = text_system.rasterize_glyph(&params, bounds) else {
+                        continue;
+                    };
+                    inner_raster_res.push(raster_start.elapsed().as_micros());
+                }
+                id_res.push(inner_id_res.iter().sum::<u128>() / inner_id_res.len() as u128);
+                bounds_res
+                    .push(inner_bounds_res.iter().sum::<u128>() / inner_bounds_res.len() as u128);
+                raster_res
+                    .push(inner_raster_res.iter().sum::<u128>() / inner_raster_res.len() as u128);
+            }
+            // macos: 0, 2, 12
+            println!(
+                "Raster glyph benches result: {}ms, {}ms, {}ms",
+                id_res.iter().sum::<u128>() / id_res.len() as u128,
+                bounds_res.iter().sum::<u128>() / bounds_res.len() as u128,
+                raster_res.iter().sum::<u128>() / raster_res.len() as u128,
+            );
+        }
+    }
+}
