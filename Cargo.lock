@@ -7910,7 +7910,6 @@ version = "0.1.0"
 dependencies = [
  "arrayvec",
  "bromberg_sl2",
- "criterion",
  "gpui",
  "log",
  "rand 0.8.5",
