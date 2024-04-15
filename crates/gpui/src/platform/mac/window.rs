@@ -291,6 +291,10 @@ unsafe fn build_window_class(name: &'static str, superclass: &Class) -> *const C
         sel!(windowShouldClose:),
         window_should_close as extern "C" fn(&Object, Sel, id) -> BOOL,
     );
+    decl.add_method(
+        sel!(windowShouldZoom:toFrame:),
+        window_should_zoom as extern "C" fn(&Object, Sel, id, NSRect) -> BOOL,
+    );
 
     decl.add_method(sel!(close), close_window as extern "C" fn(&Object, Sel));
 
@@ -1585,6 +1589,14 @@ extern "C" fn window_should_close(this: &Object, _: Sel, _: id) -> BOOL {
     } else {
         YES
     }
+}
+
+extern "C" fn window_should_zoom(this: &Object, _: Sel, _: id, _: NSRect) -> BOOL {
+    let window_state = unsafe { get_window_state(this) };
+    let mut lock = window_state.as_ref().lock();
+    let bounds = lock.bounds();
+    println!("======>\n    Zoom bounds: {:#?}", bounds);
+    YES
 }
 
 extern "C" fn close_window(this: &Object, _: Sel) {
