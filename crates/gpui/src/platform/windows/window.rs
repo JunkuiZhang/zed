@@ -138,6 +138,7 @@ impl WindowsWindow {
                 blade_graphics::ContextDesc {
                     validation: false,
                     capture: false,
+                    overlay: false,
                 },
             )
             .unwrap()
@@ -959,24 +960,36 @@ impl Drop for RawWindow {
     }
 }
 
-unsafe impl blade_rwh::HasRawWindowHandle for RawWindow {
-    fn raw_window_handle(&self) -> blade_rwh::RawWindowHandle {
-        let mut window_handle = blade_rwh::Win32WindowHandle::empty();
-        window_handle.hwnd = self.hwnd().0 as *mut _;
-        let hinstance = unsafe {
-            windows::Win32::UI::WindowsAndMessaging::GetWindowLongPtrW(self.hwnd(), GWLP_HINSTANCE)
-        };
-        window_handle.hinstance = hinstance as *mut _;
-
-        blade_rwh::RawWindowHandle::Win32(window_handle)
+impl rwh::HasWindowHandle for RawWindow {
+    fn window_handle(&self) -> Result<rwh::WindowHandle<'_>, rwh::HandleError> {
+        unsafe { Ok(rwh::WindowHandle::borrow_raw(self.raw_wh())) }
     }
 }
 
-unsafe impl blade_rwh::HasRawDisplayHandle for RawWindow {
-    fn raw_display_handle(&self) -> blade_rwh::RawDisplayHandle {
-        blade_rwh::RawDisplayHandle::Windows(blade_rwh::WindowsDisplayHandle::empty())
+impl rwh::HasDisplayHandle for RawWindow {
+    fn display_handle(&self) -> Result<rwh::DisplayHandle<'_>, rwh::HandleError> {
+        unsafe { Ok(rwh::DisplayHandle::borrow_raw(self.raw_dh())) }
     }
 }
+
+// unsafe impl blade_rwh::HasRawWindowHandle for RawWindow {
+//     fn raw_window_handle(&self) -> blade_rwh::RawWindowHandle {
+//         let mut window_handle = blade_rwh::Win32WindowHandle::empty();
+//         window_handle.hwnd = self.hwnd().0 as *mut _;
+//         let hinstance = unsafe {
+//             windows::Win32::UI::WindowsAndMessaging::GetWindowLongPtrW(self.hwnd(), GWLP_HINSTANCE)
+//         };
+//         window_handle.hinstance = hinstance as *mut _;
+
+//         blade_rwh::RawWindowHandle::Win32(window_handle)
+//     }
+// }
+
+// unsafe impl blade_rwh::HasRawDisplayHandle for RawWindow {
+//     fn raw_display_handle(&self) -> blade_rwh::RawDisplayHandle {
+//         blade_rwh::RawDisplayHandle::Windows(blade_rwh::WindowsDisplayHandle::empty())
+//     }
+// }
 
 fn parse_window_options(
     options: &WindowOptions,
