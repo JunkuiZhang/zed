@@ -178,8 +178,8 @@ fn handle_timer_msg(
 }
 
 fn handle_paint_msg(handle: HWND, state_ptr: Rc<WindowsWindowStatePtr>) -> Option<isize> {
-    let mut paint_struct = PAINTSTRUCT::default();
-    let _hdc = unsafe { BeginPaint(handle, &mut paint_struct) };
+    // let mut paint_struct = PAINTSTRUCT::default();
+    // let _hdc = unsafe { BeginPaint(handle, &mut paint_struct) };
     let mut lock = state_ptr.state.borrow_mut();
     lock.frame_count += 1;
     let elapsed = lock.last_update.elapsed().as_secs_f32();
@@ -194,7 +194,7 @@ fn handle_paint_msg(handle: HWND, state_ptr: Rc<WindowsWindowStatePtr>) -> Optio
         request_frame();
         state_ptr.state.borrow_mut().callbacks.request_frame = Some(request_frame);
     }
-    unsafe { EndPaint(handle, &paint_struct) };
+    // unsafe { EndPaint(handle, &paint_struct) };
     Some(0)
 }
 

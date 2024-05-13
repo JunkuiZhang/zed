@@ -189,23 +189,20 @@ impl Platform for WindowsPlatform {
 
         let mut msg = MSG::default();
         unsafe {
-            'a: loop {
-                while PeekMessageW(&mut msg, None, 0, 0, PM_REMOVE).as_bool() {
-                    match msg.message {
-                        WM_QUIT => break 'a,
-                        CLOSE_ONE_WINDOW => {
-                            if self.close_one_window(HWND(msg.lParam.0)) {
-                                break 'a;
-                            }
-                        }
-                        WM_SETTINGCHANGE => self.update_system_settings(),
-                        _ => {
-                            TranslateMessage(&msg);
-                            DispatchMessageW(&msg);
+            while GetMessageW(&mut msg, None, 0, 0).as_bool() {
+                match msg.message {
+                    WM_QUIT => break,
+                    CLOSE_ONE_WINDOW => {
+                        if self.close_one_window(HWND(msg.lParam.0)) {
+                            break;
                         }
                     }
+                    WM_SETTINGCHANGE => self.update_system_settings(),
+                    _ => {
+                        TranslateMessage(&msg);
+                        DispatchMessageW(&msg);
+                    }
                 }
-                self.redraw_all();
             }
         }
 
