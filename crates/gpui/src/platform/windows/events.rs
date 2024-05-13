@@ -132,10 +132,10 @@ fn handle_size_msg(lparam: LPARAM, state_ptr: Rc<WindowsWindowStatePtr>) -> Opti
     let mut lock = state_ptr.state.borrow_mut();
     let scale_factor = lock.scale_factor;
     lock.physical_size = new_physical_size;
-    lock.renderer.update_drawable_size(Size {
-        width: width as f64,
-        height: height as f64,
-    });
+    // lock.renderer.update_drawable_size(Size {
+    //     width: width as f64,
+    //     height: height as f64,
+    // });
     if let Some(mut callback) = lock.callbacks.resize.take() {
         drop(lock);
         let logical_size = logical_size(new_physical_size, scale_factor);
@@ -181,6 +181,14 @@ fn handle_paint_msg(handle: HWND, state_ptr: Rc<WindowsWindowStatePtr>) -> Optio
     let mut paint_struct = PAINTSTRUCT::default();
     let _hdc = unsafe { BeginPaint(handle, &mut paint_struct) };
     let mut lock = state_ptr.state.borrow_mut();
+    lock.frame_count += 1;
+    let elapsed = lock.last_update.elapsed().as_secs_f32();
+    if elapsed > 1.0 {
+        let fps = lock.frame_count as f32 / elapsed;
+        println!("FPS: {:.2}", fps);
+        lock.frame_count = 0;
+        lock.last_update = std::time::Instant::now();
+    }
     if let Some(mut request_frame) = lock.callbacks.request_frame.take() {
         drop(lock);
         request_frame();

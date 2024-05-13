@@ -186,53 +186,28 @@ impl Platform for WindowsPlatform {
 
     fn run(&self, on_finish_launching: Box<dyn 'static + FnOnce()>) {
         on_finish_launching();
-        let vsync_event = create_event().unwrap();
-        let timer_stop_event = create_event().unwrap();
-        let raw_timer_stop_event = timer_stop_event.to_raw();
-        begin_vsync_timer(vsync_event.to_raw(), timer_stop_event);
-        'a: loop {
-            let wait_result = unsafe {
-                MsgWaitForMultipleObjects(
-                    Some(&[vsync_event.to_raw()]),
-                    false,
-                    INFINITE,
-                    QS_ALLINPUT,
-                )
-            };
 
-            match wait_result {
-                // compositor clock ticked so we should draw a frame
-                WAIT_EVENT(0) => {
-                    self.redraw_all();
-                }
-                // Windows thread messages are posted
-                WAIT_EVENT(1) => {
-                    let mut msg = MSG::default();
-                    unsafe {
-                        while PeekMessageW(&mut msg, None, 0, 0, PM_REMOVE).as_bool() {
-                            match msg.message {
-                                WM_QUIT => break 'a,
-                                CLOSE_ONE_WINDOW => {
-                                    if self.close_one_window(HWND(msg.lParam.0)) {
-                                        break 'a;
-                                    }
-                                }
-                                WM_SETTINGCHANGE => self.update_system_settings(),
-                                _ => {
-                                    TranslateMessage(&msg);
-                                    DispatchMessageW(&msg);
-                                }
+        let mut msg = MSG::default();
+        unsafe {
+            'a: loop {
+                while PeekMessageW(&mut msg, None, 0, 0, PM_REMOVE).as_bool() {
+                    match msg.message {
+                        WM_QUIT => break 'a,
+                        CLOSE_ONE_WINDOW => {
+                            if self.close_one_window(HWND(msg.lParam.0)) {
+                                break 'a;
                             }
+                        }
+                        WM_SETTINGCHANGE => self.update_system_settings(),
+                        _ => {
+                            TranslateMessage(&msg);
+                            DispatchMessageW(&msg);
                         }
                     }
                 }
-                _ => {
-                    log::error!("Something went wrong while waiting {:?}", wait_result);
-                    break;
-                }
+                self.redraw_all();
             }
         }
-        end_vsync_timer(raw_timer_stop_event);
 
         if let Some(ref mut callback) = self.state.borrow_mut().callbacks.quit {
             callback();

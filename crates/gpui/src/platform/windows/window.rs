@@ -2,6 +2,7 @@
 
 use std::{
     cell::RefCell,
+    collections::HashMap,
     num::NonZeroIsize,
     path::PathBuf,
     rc::{Rc, Weak},
@@ -14,6 +15,7 @@ use ::util::ResultExt;
 use anyhow::Context;
 use futures::channel::oneshot::{self, Receiver};
 use itertools::Itertools;
+use parking_lot::Mutex;
 use raw_window_handle as rwh;
 use smallvec::SmallVec;
 use windows::{
@@ -40,7 +42,8 @@ pub struct WindowsWindowState {
     pub callbacks: Callbacks,
     pub input_handler: Option<PlatformInputHandler>,
 
-    pub renderer: BladeRenderer,
+    // pub renderer: BladeRenderer,
+    pub renderer: D3D11Renderer,
 
     pub click_state: ClickState,
     pub mouse_wheel_settings: MouseWheelSettings,
@@ -49,6 +52,10 @@ pub struct WindowsWindowState {
     pub display: WindowsDisplay,
     fullscreen: Option<StyleAndBounds>,
     hwnd: HWND,
+    pub atlas: Arc<dyn PlatformAtlas>,
+
+    pub last_update: Instant,
+    pub frame_count: usize,
 }
 
 pub(crate) struct WindowsWindowStatePtr {
@@ -78,7 +85,8 @@ impl WindowsWindowState {
             let monitor_dpi = unsafe { GetDpiForWindow(hwnd) } as f32;
             monitor_dpi / USER_DEFAULT_SCREEN_DPI as f32
         };
-        let renderer = windows_renderer::windows_renderer(hwnd, transparent);
+        // let renderer = windows_renderer::windows_renderer(hwnd, transparent);
+        let renderer = D3D11Renderer::new(hwnd);
         let callbacks = Callbacks::default();
         let input_handler = None;
         let click_state = ClickState::new();
@@ -98,6 +106,9 @@ impl WindowsWindowState {
             display,
             fullscreen,
             hwnd,
+            atlas: Arc::new(TestAtlas::new()),
+            last_update: Instant::now(),
+            frame_count: 0,
         }
     }
 
@@ -327,7 +338,7 @@ impl rwh::HasDisplayHandle for WindowsWindow {
 
 impl Drop for WindowsWindow {
     fn drop(&mut self) {
-        self.0.state.borrow_mut().renderer.destroy();
+        // self.0.state.borrow_mut().renderer.destroy();
         // clone this `Rc` to prevent early release of the pointer
         let this = self.0.clone();
         self.0
@@ -497,11 +508,11 @@ impl PlatformWindow for WindowsWindow {
     fn set_app_id(&mut self, _app_id: &str) {}
 
     fn set_background_appearance(&mut self, background_appearance: WindowBackgroundAppearance) {
-        self.0
-            .state
-            .borrow_mut()
-            .renderer
-            .update_transparency(background_appearance != WindowBackgroundAppearance::Opaque);
+        // self.0
+        //     .state
+        //     .borrow_mut()
+        //     .renderer
+        //     .update_transparency(background_appearance != WindowBackgroundAppearance::Opaque);
     }
 
     // todo(windows)
@@ -618,11 +629,13 @@ impl PlatformWindow for WindowsWindow {
     }
 
     fn draw(&self, scene: &Scene) {
-        self.0.state.borrow_mut().renderer.draw(scene)
+        // self.0.state.borrow_mut().renderer.draw(scene);
+        self.0.state.borrow_mut().renderer.draw();
     }
 
     fn sprite_atlas(&self) -> Arc<dyn PlatformAtlas> {
-        self.0.state.borrow().renderer.sprite_atlas().clone()
+        // self.0.state.borrow().renderer.sprite_atlas().clone()
+        self.0.state.borrow().atlas.clone()
     }
 
     fn get_raw_handle(&self) -> HWND {
@@ -1028,5 +1041,64 @@ mod tests {
             state.update(MouseButton::Right, point(DevicePixels(10), DevicePixels(0))),
             1
         );
+    }
+}
+
+pub(crate) struct TestAtlas(Mutex<TestAtlasState>);
+
+pub(crate) struct TestAtlasState {
+    next_id: u32,
+    tiles: HashMap<AtlasKey, AtlasTile>,
+}
+
+impl TestAtlas {
+    pub fn new() -> Self {
+        TestAtlas(Mutex::new(TestAtlasState {
+            next_id: 0,
+            tiles: HashMap::default(),
+        }))
+    }
+}
+
+impl PlatformAtlas for TestAtlas {
+    fn get_or_insert_with<'a>(
+        &self,
+        key: &crate::AtlasKey,
+        build: &mut dyn FnMut() -> anyhow::Result<(
+            Size<crate::DevicePixels>,
+            std::borrow::Cow<'a, [u8]>,
+        )>,
+    ) -> anyhow::Result<crate::AtlasTile> {
+        let mut state = self.0.lock();
+        if let Some(tile) = state.tiles.get(key) {
+            return Ok(tile.clone());
+        }
+
+        state.next_id += 1;
+        let texture_id = state.next_id;
+        state.next_id += 1;
+        let tile_id = state.next_id;
+
+        drop(state);
+        let (size, _) = build()?;
+        let mut state = self.0.lock();
+
+        state.tiles.insert(
+            key.clone(),
+            crate::AtlasTile {
+                texture_id: AtlasTextureId {
+                    index: texture_id,
+                    kind: crate::AtlasTextureKind::Path,
+                },
+                tile_id: TileId(tile_id),
+                padding: 0,
+                bounds: crate::Bounds {
+                    origin: Point::default(),
+                    size,
+                },
+            },
+        );
+
+        Ok(state.tiles[key].clone())
     }
 }

@@ -1,3 +1,4 @@
+mod d3d11;
 mod direct_write;
 mod dispatcher;
 mod display;
@@ -7,6 +8,7 @@ mod system_settings;
 mod util;
 mod window;
 
+pub(crate) use d3d11::*;
 pub(crate) use direct_write::*;
 pub(crate) use dispatcher::*;
 pub(crate) use display::*;
