@@ -358,8 +358,16 @@ impl LspAdapter for EsLintLspAdapter {
         delegate: &dyn LspAdapterDelegate,
     ) -> Result<LanguageServerBinary> {
         let version = version.downcast::<GitHubLspBinaryVersion>().unwrap();
+        #[cfg(not(target_os = "windows"))]
         let destination_path = container_dir.join(format!("vscode-eslint-{}", version.name));
+        #[cfg(target_os = "windows")]
+        let destination_path = {
+            let version_name = version.name.split('/').collect::<Vec<_>>()[0];
+            container_dir.join(format!("vscode-eslint-{}", version_name))
+        };
         let server_path = destination_path.join(Self::SERVER_PATH);
+        println!("==================================");
+        println!("Dest path: {}", destination_path.display());
 
         if fs::metadata(&server_path).await.is_err() {
             remove_matching(&container_dir, |entry| entry != destination_path).await;
@@ -369,22 +377,38 @@ impl LspAdapter for EsLintLspAdapter {
                 .get(&version.url, Default::default(), true)
                 .await
                 .map_err(|err| anyhow!("error downloading release: {}", err))?;
-            let decompressed_bytes = GzipDecoder::new(BufReader::new(response.body_mut()));
-            let archive = Archive::new(decompressed_bytes);
-            archive.unpack(&destination_path).await?;
+            // let decompressed_bytes = GzipDecoder::new(BufReader::new(response.body_mut()));
+            // let archive = Archive::new(decompressed_bytes);
+            // archive.unpack(&destination_path).await?;
+            {
+                let body = response.body_mut();
+                let ret = extract_zip(&destination_path, body).await;
+                println!("  ==> Unzip ret: {:?}", ret);
+                // }
+            }
 
             let mut dir = fs::read_dir(&destination_path).await?;
             let first = dir.next().await.ok_or(anyhow!("missing first file"))??;
             let repo_root = destination_path.join("vscode-eslint");
             fs::rename(first.path(), &repo_root).await?;
 
-            self.node
-                .run_npm_subcommand(Some(&repo_root), "install", &[])
-                .await?;
+            {
+                let ret = self
+                    .node
+                    .run_npm_subcommand(Some(&repo_root), "install", &[])
+                    .await;
+                println!("  ==> npm install: {:?}", ret);
+                ret?;
+            }
 
-            self.node
-                .run_npm_subcommand(Some(&repo_root), "run-script", &["compile"])
-                .await?;
+            {
+                let ret = self
+                    .node
+                    .run_npm_subcommand(Some(&repo_root), "run-script", &["compile"])
+                    .await;
+                println!("  ==> npm run-script: {:?}", ret);
+                ret?;
+            }
         }
 
         Ok(LanguageServerBinary {
@@ -431,6 +455,37 @@ async fn get_cached_eslint_server_binary(
     })
     .await
     .log_err()
+}
+
+pub async fn extract_zip<R: futures::AsyncRead + Unpin>(
+    destination: &Path,
+    reader: R,
+) -> Result<()> {
+    let mut reader = async_zip::base::read::stream::ZipFileReader::new(BufReader::new(reader));
+
+    let destination = &destination
+        .canonicalize()
+        .unwrap_or_else(|_| destination.to_path_buf());
+
+    while let Some(mut item) = reader.next_with_entry().await? {
+        let entry_reader = item.reader_mut();
+        let entry = entry_reader.entry();
+        let path = destination.join(entry.filename().as_str().unwrap());
+
+        if entry.dir().unwrap() {
+            println!("  ==> Creating dir: {}", path.display());
+            std::fs::create_dir_all(&path)?;
+        } else {
+            let parent_dir = path.parent().expect("failed to get parent directory");
+            std::fs::create_dir_all(&parent_dir)?;
+            let mut file = smol::fs::File::create(&path).await?;
+            futures::io::copy(entry_reader, &mut file).await?;
+        }
+
+        reader = item.skip().await?;
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]
