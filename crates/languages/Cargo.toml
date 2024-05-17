@@ -13,7 +13,6 @@ anyhow.workspace = true
 async-compression.workspace = true
 async-tar.workspace = true
 async-trait.workspace = true
-async_zip.workspace = true
 collections.workspace = true
 feature_flags.workspace = true
 futures.workspace = true
@@ -52,6 +51,9 @@ tree-sitter-typescript.workspace = true
 tree-sitter-yaml.workspace = true
 tree-sitter.workspace = true
 util.workspace = true
+
+[target.'cfg(target_os = "windows")'.dependencies]
+async_zip.workspace = true
 
 [dev-dependencies]
 text.workspace = true
