@@ -5765,6 +5765,7 @@ dependencies = [
  "async-compression",
  "async-tar",
  "async-trait",
+ "async_zip",
  "collections",
  "feature_flags",
  "futures 0.3.28",
