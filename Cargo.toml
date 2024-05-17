@@ -335,6 +335,7 @@ smol = "1.2"
 strum = { version = "0.25.0", features = ["derive"] }
 subtle = "2.5.0"
 sysinfo = "0.30.7"
+tar = "0.4"
 tempfile = "3.9.0"
 thiserror = "1.0.29"
 tiktoken-rs = "0.5.9"
