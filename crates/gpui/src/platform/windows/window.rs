@@ -40,7 +40,8 @@ pub struct WindowsWindowState {
     pub callbacks: Callbacks,
     pub input_handler: Option<PlatformInputHandler>,
 
-    pub renderer: BladeRenderer,
+    // pub renderer: BladeRenderer,
+    pub renderer: DirectXRenderer,
 
     pub click_state: ClickState,
     pub system_settings: WindowsSystemSettings,
@@ -82,7 +83,8 @@ impl WindowsWindowState {
             origin,
             size: logical_size,
         };
-        let renderer = windows_renderer::windows_renderer(hwnd, transparent);
+        // let renderer = windows_renderer::windows_renderer(hwnd, transparent);
+        let renderer = DirectXRenderer::new();
         let callbacks = Callbacks::default();
         let input_handler = None;
         let click_state = ClickState::new();
@@ -350,7 +352,7 @@ impl rwh::HasDisplayHandle for WindowsWindow {
 
 impl Drop for WindowsWindow {
     fn drop(&mut self) {
-        self.0.state.borrow_mut().renderer.destroy();
+        // self.0.state.borrow_mut().renderer.destroy();
         // clone this `Rc` to prevent early release of the pointer
         let this = self.0.clone();
         self.0
@@ -523,11 +525,12 @@ impl PlatformWindow for WindowsWindow {
     }
 
     fn set_background_appearance(&self, background_appearance: WindowBackgroundAppearance) {
-        self.0
-            .state
-            .borrow_mut()
-            .renderer
-            .update_transparency(background_appearance != WindowBackgroundAppearance::Opaque);
+        // TODO:
+        // self.0
+        //     .state
+        //     .borrow_mut()
+        //     .renderer
+        //     .update_transparency(background_appearance != WindowBackgroundAppearance::Opaque);
     }
 
     fn minimize(&self) {
@@ -640,11 +643,14 @@ impl PlatformWindow for WindowsWindow {
     }
 
     fn draw(&self, scene: &Scene) {
-        self.0.state.borrow_mut().renderer.draw(scene)
+        // TODO:
+        // self.0.state.borrow_mut().renderer.draw(scene)
     }
 
     fn sprite_atlas(&self) -> Arc<dyn PlatformAtlas> {
-        self.0.state.borrow().renderer.sprite_atlas().clone()
+        // TODO:
+        // self.0.state.borrow().renderer.sprite_atlas().clone()
+        self.0.state.borrow().renderer.spirite_atlas()
     }
 
     fn get_raw_handle(&self) -> HWND {
