@@ -26,7 +26,6 @@ use windows::{
     },
 };
 
-use crate::platform::blade::BladeRenderer;
 use crate::*;
 
 pub(crate) struct WindowsWindow(pub Rc<WindowsWindowStatePtr>);
@@ -65,7 +64,6 @@ pub(crate) struct WindowsWindowStatePtr {
 impl WindowsWindowState {
     fn new(
         hwnd: HWND,
-        transparent: bool,
         cs: &CREATESTRUCTW,
         current_cursor: HCURSOR,
         display: WindowsDisplay,
@@ -204,7 +202,6 @@ impl WindowsWindowStatePtr {
     fn new(context: &WindowCreateContext, hwnd: HWND, cs: &CREATESTRUCTW) -> Rc<Self> {
         let state = RefCell::new(WindowsWindowState::new(
             hwnd,
-            context.transparent,
             cs,
             context.current_cursor,
             context.display,
@@ -238,7 +235,6 @@ struct WindowCreateContext {
     handle: AnyWindowHandle,
     hide_title_bar: bool,
     display: WindowsDisplay,
-    transparent: bool,
     is_movable: bool,
     executor: ForegroundExecutor,
     current_cursor: HCURSOR,
@@ -286,7 +282,6 @@ impl WindowsWindow {
             handle,
             hide_title_bar,
             display,
-            transparent: true,
             is_movable: params.is_movable,
             executor,
             current_cursor,
@@ -525,12 +520,11 @@ impl PlatformWindow for WindowsWindow {
     }
 
     fn set_background_appearance(&self, background_appearance: WindowBackgroundAppearance) {
-        // TODO:
-        // self.0
-        //     .state
-        //     .borrow_mut()
-        //     .renderer
-        //     .update_transparency(background_appearance != WindowBackgroundAppearance::Opaque);
+        self.0
+            .state
+            .borrow_mut()
+            .renderer
+            .update_transparency(background_appearance);
     }
 
     fn minimize(&self) {
@@ -643,13 +637,10 @@ impl PlatformWindow for WindowsWindow {
     }
 
     fn draw(&self, scene: &Scene) {
-        // TODO:
-        // self.0.state.borrow_mut().renderer.draw(scene)
+        self.0.state.borrow_mut().renderer.draw(scene)
     }
 
     fn sprite_atlas(&self) -> Arc<dyn PlatformAtlas> {
-        // TODO:
-        // self.0.state.borrow().renderer.sprite_atlas().clone()
         self.0.state.borrow().renderer.spirite_atlas()
     }
 
