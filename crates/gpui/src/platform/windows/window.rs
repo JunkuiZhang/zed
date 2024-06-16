@@ -82,7 +82,7 @@ impl WindowsWindowState {
             size: logical_size,
         };
         // let renderer = windows_renderer::windows_renderer(hwnd, transparent);
-        let renderer = DirectXRenderer::new();
+        let renderer = DirectXRenderer::new(hwnd);
         let callbacks = Callbacks::default();
         let input_handler = None;
         let click_state = ClickState::new();
@@ -263,10 +263,13 @@ impl WindowsWindow {
                 .unwrap_or(""),
         );
         let (dwexstyle, dwstyle) = if params.kind == WindowKind::PopUp {
-            (WS_EX_TOOLWINDOW, WINDOW_STYLE(0x0))
+            (
+                WS_EX_TOOLWINDOW | WS_EX_NOREDIRECTIONBITMAP,
+                WINDOW_STYLE(0x0),
+            )
         } else {
             (
-                WS_EX_APPWINDOW,
+                WS_EX_APPWINDOW | WS_EX_NOREDIRECTIONBITMAP,
                 WS_THICKFRAME | WS_SYSMENU | WS_MAXIMIZEBOX | WS_MINIMIZEBOX,
             )
         };
