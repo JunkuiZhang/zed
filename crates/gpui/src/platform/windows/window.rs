@@ -64,6 +64,7 @@ pub(crate) struct WindowsWindowStatePtr {
 impl WindowsWindowState {
     fn new(
         hwnd: HWND,
+        directx_devices: DirectXDevices,
         transparent: bool,
         cs: &CREATESTRUCTW,
         current_cursor: HCURSOR,
@@ -82,7 +83,7 @@ impl WindowsWindowState {
             origin,
             size: logical_size,
         };
-        let renderer = DirectXRenderer::new(hwnd, transparent);
+        let renderer = DirectXRenderer::new(directx_devices, hwnd, transparent);
         let callbacks = Callbacks::default();
         let input_handler = None;
         let click_state = ClickState::new();
@@ -202,6 +203,7 @@ impl WindowsWindowStatePtr {
     fn new(context: &WindowCreateContext, hwnd: HWND, cs: &CREATESTRUCTW) -> Rc<Self> {
         let state = RefCell::new(WindowsWindowState::new(
             hwnd,
+            context.directx_devices.clone(),
             context.transparent,
             cs,
             context.current_cursor,
@@ -240,6 +242,7 @@ struct WindowCreateContext {
     transparent: bool,
     executor: ForegroundExecutor,
     current_cursor: HCURSOR,
+    directx_devices: DirectXDevices,
 }
 
 impl WindowsWindow {
@@ -249,6 +252,7 @@ impl WindowsWindow {
         icon: HICON,
         executor: ForegroundExecutor,
         current_cursor: HCURSOR,
+        directx_devices: DirectXDevices,
     ) -> Self {
         let classname = register_wnd_class(icon);
         let hide_title_bar = params
@@ -291,6 +295,7 @@ impl WindowsWindow {
             transparent: params.window_background != WindowBackgroundAppearance::Opaque,
             executor,
             current_cursor,
+            directx_devices,
         };
         let lpparam = Some(&context as *const _ as *const _);
         let raw_hwnd = unsafe {
