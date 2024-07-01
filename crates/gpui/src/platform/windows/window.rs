@@ -535,7 +535,8 @@ impl PlatformWindow for WindowsWindow {
             .state
             .borrow_mut()
             .renderer
-            .update_transparency(background_appearance);
+            .update_transparency(background_appearance)
+            .log_err();
     }
 
     fn minimize(&self) {
