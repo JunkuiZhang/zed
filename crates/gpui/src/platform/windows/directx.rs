@@ -905,7 +905,6 @@ fn create_pipieline(
     element_size: usize,
     buffer_size: usize,
 ) -> Result<PipelineState> {
-    #[cfg(debug_assertions)]
     let vertex = {
         let shader_blob = shader_resources::build_shader_blob(vertex_entry, "vs_5_0")?;
         let bytes = unsafe {
@@ -916,7 +915,6 @@ fn create_pipieline(
         };
         create_vertex_shader(device, bytes)?
     };
-    #[cfg(debug_assertions)]
     let fragment = {
         let shader_blob = shader_resources::build_shader_blob(fragment_entry, "ps_5_0")?;
         let bytes = unsafe {
@@ -1114,7 +1112,6 @@ fn draw_with_texture(
 
 const BUFFER_COUNT: usize = 3;
 
-#[cfg(debug_assertions)]
 mod shader_resources {
     use anyhow::Result;
     use windows::Win32::Graphics::Direct3D::{
@@ -1137,13 +1134,17 @@ mod shader_resources {
             target.push_str("\0");
             let entry_point = PCSTR::from_raw(entry.as_ptr());
             let target_cstr = PCSTR::from_raw(target.as_ptr());
+            #[cfg(debug_assertions)]
+            let compile_flag = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+            #[cfg(not(debug_assertions))]
+            let compile_flag = 0;
             let ret = D3DCompileFromFile(
                 &HSTRING::from(shader_path.to_str().unwrap()),
                 None,
                 None,
                 entry_point,
                 target_cstr,
-                D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION,
+                compile_flag,
                 0,
                 &mut compile_blob,
                 Some(&mut error_blob),
