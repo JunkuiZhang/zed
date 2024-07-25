@@ -611,11 +611,39 @@ impl settings::Settings for ThemeSettings {
             enum_values: Some(available_fonts),
             ..Default::default()
         };
+
+        let mut font_feature_schema = SchemaObject {
+            instance_type: Some(InstanceType::Object.into()),
+            ..Default::default()
+        };
+        {
+            let mut feature_schema = SchemaObject::default();
+            feature_schema.instance_type = Some(schemars::schema::SingleOrVec::Vec(vec![
+                InstanceType::Boolean,
+                InstanceType::Integer,
+            ]));
+            {
+                let number_constraints = feature_schema.number();
+                number_constraints.multiple_of = Some(1.0);
+                number_constraints.minimum = Some(0.0);
+            }
+            let settings = ThemeSettings::get_global(cx);
+            let x = settings.buffer_font.family.as_ref();
+            let features = cx.text_system().font_features(x);
+            for feature_tag in features {
+                font_feature_schema
+                    .object()
+                    .properties
+                    .insert(feature_tag, feature_schema.clone().into());
+            }
+        }
         root_schema.definitions.extend([
             ("ThemeName".into(), theme_name_schema.into()),
             ("FontFamilies".into(), fonts_schema.into()),
+            ("FontFeatures".into(), font_feature_schema.into()),
         ]);
 
+        println!("{:#?}", root_schema);
         root_schema
             .schema
             .object
@@ -632,6 +660,10 @@ impl settings::Settings for ThemeSettings {
                     Schema::new_ref("#/definitions/FontFamilies".into()),
                 ),
             ]);
+        root_schema.schema.object().properties.insert(
+            "buffer_font_features".to_owned(),
+            Schema::new_ref("#/definitions/FontFeatures".into()),
+        );
 
         root_schema
     }

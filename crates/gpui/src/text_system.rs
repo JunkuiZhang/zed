@@ -289,6 +289,11 @@ impl TextSystem {
         self.platform_text_system
             .rasterize_glyph(params, raster_bounds)
     }
+
+    /// TODO:
+    pub fn font_features(&self, family_name: &str) -> Vec<String> {
+        self.platform_text_system.font_features(family_name)
+    }
 }
 
 /// The GPUI text layout subsystem.
