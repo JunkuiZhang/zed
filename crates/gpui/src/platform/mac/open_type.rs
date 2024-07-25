@@ -4,9 +4,10 @@ use crate::FontFeatures;
 use cocoa::appkit::CGFloat;
 use core_foundation::{
     array::{
-        kCFTypeArrayCallBacks, CFArray, CFArrayAppendValue, CFArrayCreateMutable, CFMutableArrayRef,
+        kCFTypeArrayCallBacks, CFArray, CFArrayAppendValue, CFArrayCreateMutable, CFArrayRef,
+        CFMutableArrayRef,
     },
-    base::{kCFAllocatorDefault, CFRelease, TCFType},
+    base::{kCFAllocatorDefault, CFRelease, TCFType, TCFTypeRef},
     dictionary::{
         kCFTypeDictionaryKeyCallBacks, kCFTypeDictionaryValueCallBacks, CFDictionaryCreate,
     },
@@ -71,10 +72,40 @@ pub fn apply_features(font: &mut Font, features: &FontFeatures) {
     }
 }
 
+pub fn retrieve_font_features(font: &Font) {
+    unsafe {
+        let mut result = Vec::new();
+        let native_font = font.native_font();
+        let array = CTFontCopyFeatures(native_font.as_concrete_TypeRef());
+        let features: CFArray<CFDictionary<CFString>> = CFArray::wrap_under_get_rule(array);
+        for feature in features.iter() {
+            if let Some(feature_tag) = feature.find(kCTFontOpenTypeFeatureTag) {
+                let tag = CFString::wrap_under_get_rule(*feature_tag as _).to_string();
+                result.push(tag);
+            } else if let Some(selector_dict) = feature.find(kCTFontFeatureTypeSelectorsKey) {
+                let selector_dict: CFArray<CFDictionary<CFString>> =
+                    CFArray::wrap_under_get_rule(*selector_dict as _);
+                for selector in selector_dict.iter() {
+                    let Some(feature_tag) = selector.find(kCTFontOpenTypeFeatureTag) else {
+                        continue;
+                    };
+                    let tag = CFString::wrap_under_get_rule(*feature_tag as _).to_string();
+                    result.push(tag);
+                }
+            }
+        }
+        CFRelease(array.as_void_ptr());
+        println!("Features: {:?}", result);
+    }
+}
+
 #[link(name = "CoreText", kind = "framework")]
 extern "C" {
     static kCTFontOpenTypeFeatureTag: CFStringRef;
     static kCTFontOpenTypeFeatureValue: CFStringRef;
+    static kCTFontFeatureTypeNameKey: CFStringRef;
+    static kCTFontFeatureSelectorNameKey: CFStringRef;
+    static kCTFontFeatureTypeSelectorsKey: CFStringRef;
 
     fn CTFontCreateCopyWithAttributes(
         font: CTFontRef,
@@ -82,4 +113,6 @@ extern "C" {
         matrix: *const CGAffineTransform,
         attributes: CTFontDescriptorRef,
     ) -> CTFontRef;
+
+    fn CTFontCopyFeatures(font: CTFontRef) -> CFArrayRef;
 }

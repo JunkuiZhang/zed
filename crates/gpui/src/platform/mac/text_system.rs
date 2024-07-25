@@ -1,7 +1,8 @@
 use crate::{
-    point, px, size, Bounds, DevicePixels, Font, FontFeatures, FontId, FontMetrics, FontRun,
-    FontStyle, FontWeight, GlyphId, LineLayout, Pixels, PlatformTextSystem, Point,
-    RenderGlyphParams, Result, ShapedGlyph, ShapedRun, SharedString, Size, SUBPIXEL_VARIANTS,
+    platform::mac::open_type::retrieve_font_features, point, px, size, Bounds, DevicePixels, Font,
+    FontFeatures, FontId, FontMetrics, FontRun, FontStyle, FontWeight, GlyphId, LineLayout, Pixels,
+    PlatformTextSystem, Point, RenderGlyphParams, Result, ShapedGlyph, ShapedRun, SharedString,
+    Size, SUBPIXEL_VARIANTS,
 };
 use anyhow::anyhow;
 use cocoa::appkit::{CGFloat, CGPoint};
@@ -228,6 +229,9 @@ impl MacTextSystemState {
             let mut font = font.load()?;
 
             open_type::apply_features(&mut font, features);
+
+            println!("==> {}", name);
+            retrieve_font_features(&font);
 
             // This block contains a precautionary fix to guard against loading fonts
             // that might cause panics due to `.unwrap()`s up the chain.
