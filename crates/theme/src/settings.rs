@@ -731,8 +731,7 @@ fn retrieve_metadata(key: &str, schema: &mut RootSchema) -> Option<Box<Metadata>
         .schema
         .object()
         .properties
-        .get(key)
-        .unwrap()
+        .get(key)?
         .clone()
         .into_object()
         .metadata
