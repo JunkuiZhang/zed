@@ -671,7 +671,7 @@ fn generate_font_feature_schema(family_name: &str, cx: &AppContext) -> SchemaObj
         instance_type: Some(InstanceType::Object.into()),
         ..Default::default()
     };
-    let feature_schema = {
+    let property = {
         let mut schema = SchemaObject::default();
         schema.instance_type = Some(schemars::schema::SingleOrVec::Vec(vec![
             InstanceType::Boolean,
@@ -685,11 +685,18 @@ fn generate_font_feature_schema(family_name: &str, cx: &AppContext) -> SchemaObj
         schema
     };
     let features = cx.text_system().font_features(family_name);
-    for feature_tag in features {
+    if features.is_empty() {
         font_feature_schema
             .object()
-            .properties
-            .insert(feature_tag, feature_schema.clone().into());
+            .pattern_properties
+            .insert("[0-9a-zA-Z]{4}$".into(), property.into());
+    } else {
+        for feature_tag in features {
+            font_feature_schema
+                .object()
+                .properties
+                .insert(feature_tag, property.clone().into());
+        }
     }
     font_feature_schema
 }
