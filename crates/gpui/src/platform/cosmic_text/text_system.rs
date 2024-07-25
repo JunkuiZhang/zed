@@ -137,6 +137,11 @@ impl PlatformTextSystem for CosmicTextSystem {
         }
     }
 
+    // todo(linux)
+    fn font_features(&self, _family_name: &str) -> Vec<String> {
+        Vec::new()
+    }
+
     fn typographic_bounds(&self, font_id: FontId, glyph_id: GlyphId) -> Result<Bounds<f32>> {
         let lock = self.0.read();
         let glyph_metrics = lock.loaded_fonts_store[font_id.0]
