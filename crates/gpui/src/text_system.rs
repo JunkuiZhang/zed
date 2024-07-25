@@ -290,7 +290,7 @@ impl TextSystem {
             .rasterize_glyph(params, raster_bounds)
     }
 
-    /// TODO:
+    /// Retrieve font features given a family name
     pub fn font_features(&self, family_name: &str) -> Vec<String> {
         self.platform_text_system.font_features(family_name)
     }
