@@ -94,7 +94,6 @@ pub fn retrieve_font_features(font: &Font) -> Vec<String> {
                 }
             }
         }
-        CFRelease(array.as_void_ptr());
         result
     }
 }
@@ -103,8 +102,6 @@ pub fn retrieve_font_features(font: &Font) -> Vec<String> {
 extern "C" {
     static kCTFontOpenTypeFeatureTag: CFStringRef;
     static kCTFontOpenTypeFeatureValue: CFStringRef;
-    static kCTFontFeatureTypeNameKey: CFStringRef;
-    static kCTFontFeatureSelectorNameKey: CFStringRef;
     static kCTFontFeatureTypeSelectorsKey: CFStringRef;
 
     fn CTFontCreateCopyWithAttributes(
