@@ -72,7 +72,7 @@ pub fn apply_features(font: &mut Font, features: &FontFeatures) {
     }
 }
 
-pub fn retrieve_font_features(font: &Font) {
+pub fn retrieve_font_features(font: &Font) -> Vec<String> {
     unsafe {
         let mut result = Vec::new();
         let native_font = font.native_font();
@@ -95,7 +95,7 @@ pub fn retrieve_font_features(font: &Font) {
             }
         }
         CFRelease(array.as_void_ptr());
-        println!("Features: {:?}", result);
+        result
     }
 }
 

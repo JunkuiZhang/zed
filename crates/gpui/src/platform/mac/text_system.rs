@@ -27,6 +27,7 @@ use core_text::{
     string_attributes::kCTFontAttributeName,
 };
 use font_kit::{
+    family_handle::FamilyHandle,
     font::Font as FontKitFont,
     handle::Handle,
     hinting::HintingOptions,
@@ -43,6 +44,7 @@ use pathfinder_geometry::{
 };
 use smallvec::SmallVec;
 use std::{borrow::Cow, char, cmp, convert::TryFrom, sync::Arc};
+use util::ResultExt;
 
 use super::open_type;
 
@@ -157,6 +159,14 @@ impl PlatformTextSystem for MacTextSystem {
         self.0.read().fonts[font_id.0].metrics().into()
     }
 
+    fn font_features(&self, family_name: &str) -> Vec<String> {
+        self.0
+            .read()
+            .font_features(family_name)
+            .log_err()
+            .unwrap_or_default()
+    }
+
     fn typographic_bounds(&self, font_id: FontId, glyph_id: GlyphId) -> Result<Bounds<f32>> {
         Ok(self.0.read().fonts[font_id.0]
             .typographic_bounds(glyph_id.0)?
@@ -209,29 +219,29 @@ impl MacTextSystemState {
         Ok(())
     }
 
+    fn select_family_by_name(&self, family_name: &str) -> Result<FamilyHandle> {
+        let name = if family_name == ".SystemUIFont" {
+            ".AppleSystemUIFont"
+        } else {
+            family_name
+        };
+        Ok(self
+            .memory_source
+            .select_family_by_name(name)
+            .or_else(|_| self.system_source.select_family_by_name(name))?)
+    }
+
     fn load_family(
         &mut self,
         name: &str,
         features: &FontFeatures,
     ) -> Result<SmallVec<[FontId; 4]>> {
-        let name = if name == ".SystemUIFont" {
-            ".AppleSystemUIFont"
-        } else {
-            name
-        };
-
+        let family = self.select_family_by_name(name)?;
         let mut font_ids = SmallVec::new();
-        let family = self
-            .memory_source
-            .select_family_by_name(name)
-            .or_else(|_| self.system_source.select_family_by_name(name))?;
         for font in family.fonts() {
             let mut font = font.load()?;
 
             open_type::apply_features(&mut font, features);
-
-            println!("==> {}", name);
-            retrieve_font_features(&font);
 
             // This block contains a precautionary fix to guard against loading fonts
             // that might cause panics due to `.unwrap()`s up the chain.
@@ -299,6 +309,15 @@ impl MacTextSystemState {
             self.fonts.push(font);
         }
         Ok(font_ids)
+    }
+
+    fn font_features(&self, family_name: &str) -> Result<Vec<String>> {
+        let family = self.select_family_by_name(family_name)?;
+        let Some(font) = family.fonts().first() else {
+            return Err(anyhow!("No font found for family name: {family_name}"));
+        };
+        let font = font.load()?;
+        Ok(retrieve_font_features(&font))
     }
 
     fn advance(&self, font_id: FontId, glyph_id: GlyphId) -> Result<Size<f32>> {
