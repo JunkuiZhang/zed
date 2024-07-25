@@ -7,7 +7,7 @@ use gpui::{
     ViewContext, WindowContext,
 };
 use refineable::Refineable;
-use schemars::schema::Metadata;
+use schemars::schema::{Metadata, RootSchema};
 use schemars::{
     gen::SchemaGenerator,
     schema::{InstanceType, Schema, SchemaObject},
@@ -601,38 +601,24 @@ impl settings::Settings for ThemeSettings {
             ..Default::default()
         };
 
-        let available_fonts = params
+        let mut available_ui_fonts = params
             .font_names
             .iter()
             .cloned()
             .map(Value::String)
             .collect::<Vec<_>>();
+        let available_buffer_fonts = available_ui_fonts.clone();
+        available_ui_fonts.push(".SystemUIFont".into());
         let ui_font_schema = SchemaObject {
             instance_type: Some(InstanceType::String.into()),
-            enum_values: Some(available_fonts.clone()),
-            metadata: root_schema
-                .schema
-                .object()
-                .properties
-                .get("ui_font_family")
-                .unwrap()
-                .clone()
-                .into_object()
-                .metadata,
+            enum_values: Some(available_ui_fonts.clone()),
+            metadata: retrieve_metadata("ui_font_family", &mut root_schema),
             ..Default::default()
         };
         let buffer_font_schema = SchemaObject {
             instance_type: Some(InstanceType::String.into()),
-            enum_values: Some(available_fonts),
-            metadata: root_schema
-                .schema
-                .object()
-                .properties
-                .get("buffer_font_family")
-                .unwrap()
-                .clone()
-                .into_object()
-                .metadata,
+            enum_values: Some(available_buffer_fonts),
+            metadata: retrieve_metadata("buffer_font_family", &mut root_schema),
             ..Default::default()
         };
         let (ui_font_family, buffer_font_family) = {
@@ -642,27 +628,17 @@ impl settings::Settings for ThemeSettings {
                 settings.buffer_font.family.as_ref(),
             )
         };
-        let ui_metadata = root_schema
-            .schema
-            .object()
-            .properties
-            .get("ui_font_features")
-            .unwrap()
-            .clone()
-            .into_object()
-            .metadata;
-        let buffer_metadata = root_schema
-            .schema
-            .object()
-            .properties
-            .get("buffer_font_features")
-            .unwrap()
-            .clone()
-            .into_object()
-            .metadata;
-        let ui_font_feature_schema = generate_font_feature_schema(ui_font_family, cx, ui_metadata);
-        let buffer_font_feature_schema =
-            generate_font_feature_schema(buffer_font_family, cx, buffer_metadata);
+
+        let ui_font_feature_schema = generate_font_feature_schema(
+            ui_font_family,
+            cx,
+            retrieve_metadata("ui_font_features", &mut root_schema),
+        );
+        let buffer_font_feature_schema = generate_font_feature_schema(
+            buffer_font_family,
+            cx,
+            retrieve_metadata("buffer_font_features", &mut root_schema),
+        );
 
         root_schema.definitions.extend([
             ("ThemeName".into(), theme_name_schema.into()),
@@ -748,4 +724,16 @@ fn generate_font_feature_schema(
         }
     }
     font_feature_schema
+}
+
+fn retrieve_metadata(key: &str, schema: &mut RootSchema) -> Option<Box<Metadata>> {
+    schema
+        .schema
+        .object()
+        .properties
+        .get(key)
+        .unwrap()
+        .clone()
+        .into_object()
+        .metadata
 }
