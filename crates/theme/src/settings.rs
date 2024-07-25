@@ -611,39 +611,27 @@ impl settings::Settings for ThemeSettings {
             enum_values: Some(available_fonts),
             ..Default::default()
         };
-
-        let mut font_feature_schema = SchemaObject {
-            instance_type: Some(InstanceType::Object.into()),
-            ..Default::default()
-        };
-        {
-            let mut feature_schema = SchemaObject::default();
-            feature_schema.instance_type = Some(schemars::schema::SingleOrVec::Vec(vec![
-                InstanceType::Boolean,
-                InstanceType::Integer,
-            ]));
-            {
-                let number_constraints = feature_schema.number();
-                number_constraints.multiple_of = Some(1.0);
-                number_constraints.minimum = Some(0.0);
-            }
+        let (ui_font_family, buffer_font_family) = {
             let settings = ThemeSettings::get_global(cx);
-            let x = settings.buffer_font.family.as_ref();
-            let features = cx.text_system().font_features(x);
-            for feature_tag in features {
-                font_feature_schema
-                    .object()
-                    .properties
-                    .insert(feature_tag, feature_schema.clone().into());
-            }
-        }
+            (
+                settings.ui_font.family.as_ref(),
+                settings.buffer_font.family.as_ref(),
+            )
+        };
+        let ui_font_feature_schema = generate_font_feature_schema(ui_font_family, cx);
+        let buffer_font_feature_schema = generate_font_feature_schema(buffer_font_family, cx);
+
         root_schema.definitions.extend([
             ("ThemeName".into(), theme_name_schema.into()),
             ("FontFamilies".into(), fonts_schema.into()),
-            ("FontFeatures".into(), font_feature_schema.into()),
+            ("UiFontFeatures".into(), ui_font_feature_schema.into()),
+            (
+                "BufferFontFeatures".into(),
+                buffer_font_feature_schema.into(),
+            ),
         ]);
 
-        println!("{:#?}", root_schema);
+        println!("{:#?}", root_schema.schema.object().properties);
         root_schema
             .schema
             .object
@@ -659,11 +647,15 @@ impl settings::Settings for ThemeSettings {
                     "ui_font_family".to_owned(),
                     Schema::new_ref("#/definitions/FontFamilies".into()),
                 ),
+                (
+                    "buffer_font_features".to_owned(),
+                    Schema::new_ref("#/definitions/BufferFontFeatures".into()),
+                ),
+                (
+                    "ui_font_features".to_owned(),
+                    Schema::new_ref("#/definitions/UiFontFeatures".into()),
+                ),
             ]);
-        root_schema.schema.object().properties.insert(
-            "buffer_font_features".to_owned(),
-            Schema::new_ref("#/definitions/FontFeatures".into()),
-        );
 
         root_schema
     }
@@ -673,4 +665,32 @@ fn merge<T: Copy>(target: &mut T, value: Option<T>) {
     if let Some(value) = value {
         *target = value;
     }
+}
+
+fn generate_font_feature_schema(family_name: &str, cx: &AppContext) -> SchemaObject {
+    let mut font_feature_schema = SchemaObject {
+        instance_type: Some(InstanceType::Object.into()),
+        ..Default::default()
+    };
+    let feature_schema = {
+        let mut schema = SchemaObject::default();
+        schema.instance_type = Some(schemars::schema::SingleOrVec::Vec(vec![
+            InstanceType::Boolean,
+            InstanceType::Integer,
+        ]));
+        {
+            let number_constraints = schema.number();
+            number_constraints.multiple_of = Some(1.0);
+            number_constraints.minimum = Some(0.0);
+        }
+        schema
+    };
+    let features = cx.text_system().font_features(family_name);
+    for feature_tag in features {
+        font_feature_schema
+            .object()
+            .properties
+            .insert(feature_tag, feature_schema.clone().into());
+    }
+    font_feature_schema
 }

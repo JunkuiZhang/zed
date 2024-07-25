@@ -1,12 +1,9 @@
 use std::sync::Arc;
 
-use schemars::{
-    schema::{InstanceType, SchemaObject},
-    JsonSchema,
-};
+use schemars::schema::SchemaObject;
 
 /// The OpenType features that can be configured for a given font.
-#[derive(Default, Clone, Eq, PartialEq, Hash, JsonSchema)]
+#[derive(Default, Clone, Eq, PartialEq, Hash)]
 pub struct FontFeatures(pub Arc<Vec<(String, u32)>>);
 
 impl FontFeatures {
@@ -116,35 +113,15 @@ impl serde::Serialize for FontFeatures {
     }
 }
 
-// impl schemars::JsonSchema for FontFeatures {
-//     fn schema_name() -> String {
-//         "FontFeatures".into()
-//     }
+impl schemars::JsonSchema for FontFeatures {
+    fn schema_name() -> String {
+        "".into()
+    }
 
-//     fn json_schema(_: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
-//         let mut schema = SchemaObject::default();
-//         schema.instance_type = Some(schemars::schema::SingleOrVec::Single(Box::new(
-//             InstanceType::Object,
-//         )));
-//         {
-//             let mut property = SchemaObject::default();
-//             property.instance_type = Some(schemars::schema::SingleOrVec::Vec(vec![
-//                 InstanceType::Boolean,
-//                 InstanceType::Integer,
-//             ]));
-//             {
-//                 let mut number_constraints = property.number();
-//                 number_constraints.multiple_of = Some(1.0);
-//                 number_constraints.minimum = Some(0.0);
-//             }
-//             schema
-//                 .object()
-//                 .pattern_properties
-//                 .insert("[0-9a-zA-Z]{4}$".into(), property.into());
-//         }
-//         schema.into()
-//     }
-// }
+    fn json_schema(_: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
+        SchemaObject::default().into()
+    }
+}
 
 fn is_valid_feature_tag(tag: &str) -> bool {
     tag.len() == 4 && tag.chars().all(|c| c.is_ascii_alphanumeric())
