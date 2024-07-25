@@ -45,6 +45,7 @@ struct DirectWriteComponent {
     builder: IDWriteFontSetBuilder1,
     text_renderer: Arc<TextRendererWrapper>,
     render_context: GlyphRenderContext,
+    analyzer: IDWriteTextAnalyzer2,
 }
 
 struct GlyphRenderContext {
@@ -93,6 +94,8 @@ impl DirectWriteComponent {
             let locale = String::from_utf16_lossy(&locale_vec);
             let text_renderer = Arc::new(TextRendererWrapper::new(&locale));
             let render_context = GlyphRenderContext::new(&factory, &d2d1_factory)?;
+            let analyzer = factory.CreateTextAnalyzer()?;
+            let analyzer: IDWriteTextAnalyzer2 = analyzer.cast()?;
 
             Ok(DirectWriteComponent {
                 locale,
@@ -103,6 +106,7 @@ impl DirectWriteComponent {
                 builder,
                 text_renderer,
                 render_context,
+                analyzer,
             })
         }
     }
@@ -200,6 +204,14 @@ impl PlatformTextSystem for DirectWriteTextSystem {
 
     fn font_metrics(&self, font_id: FontId) -> FontMetrics {
         self.0.read().font_metrics(font_id)
+    }
+
+    fn font_features(&self, family_name: &str) -> Vec<String> {
+        self.0
+            .read()
+            .font_features(family_name)
+            .log_err()
+            .unwrap_or_default()
     }
 
     fn typographic_bounds(&self, font_id: FontId, glyph_id: GlyphId) -> Result<Bounds<f32>> {
@@ -560,6 +572,50 @@ impl DirectWriteState {
                 },
             }
         }
+    }
+
+    fn font_features(&self, family_name: &str) -> Result<Vec<String>> {
+        let face = self
+            .font_features_from_collection(family_name, true)
+            .or_else(|_| self.font_features_from_collection(family_name, false))?;
+
+        retrieve_font_features(&face, &self.components.analyzer)
+    }
+
+    fn font_features_from_collection(
+        &self,
+        family_name: &str,
+        is_system_font: bool,
+    ) -> Result<IDWriteFontFace3> {
+        let collection = if is_system_font {
+            &self.system_font_collection
+        } else {
+            &self.custom_font_collection
+        };
+        let fontset = unsafe { collection.GetFontSet() }?;
+        let font = unsafe {
+            fontset.GetMatchingFonts(
+                &HSTRING::from(family_name),
+                DWRITE_FONT_WEIGHT_NORMAL,
+                DWRITE_FONT_STRETCH_NORMAL,
+                DWRITE_FONT_STYLE_NORMAL,
+            )?
+        };
+        let total_number = unsafe { font.GetFontCount() };
+        println!("number for system: {}->{}", is_system_font, total_number);
+        if total_number == 0 {
+            return Err(anyhow::anyhow!("No match"));
+        }
+        for index in 0..total_number {
+            let Some(font_face_ref) = unsafe { font.GetFontFaceReference(index) }.log_err() else {
+                continue;
+            };
+            let Some(font_face) = unsafe { font_face_ref.CreateFontFace() }.log_err() else {
+                continue;
+            };
+            return Ok(font_face);
+        }
+        Err(anyhow::anyhow!("No match"))
     }
 
     fn raster_bounds(&self, params: &RenderGlyphParams) -> Result<Bounds<DevicePixels>> {
@@ -1282,6 +1338,12 @@ fn make_open_type_tag(tag_name: &str) -> u32 {
 }
 
 #[inline]
+fn feature_tag_to_string(tag: u32) -> String {
+    let bytes = tag.to_ne_bytes();
+    String::from_utf8_lossy(&bytes).into()
+}
+
+#[inline]
 fn make_direct_write_tag(tag_name: &str) -> DWRITE_FONT_FEATURE_TAG {
     DWRITE_FONT_FEATURE_TAG(make_open_type_tag(tag_name))
 }
@@ -1369,6 +1431,30 @@ fn get_render_target_property(
         usage: D2D1_RENDER_TARGET_USAGE_NONE,
         minLevel: D2D1_FEATURE_LEVEL_DEFAULT,
     }
+}
+
+fn retrieve_font_features(
+    font: &IDWriteFontFace3,
+    analyzer: &IDWriteTextAnalyzer2,
+) -> Result<Vec<String>> {
+    let tags = unsafe {
+        let mut result = vec![DWRITE_FONT_FEATURE_TAG::default(); 512];
+        let mut count = 0;
+        analyzer.GetTypographicFeatures(
+            font,
+            DWRITE_SCRIPT_ANALYSIS::default(),
+            None,
+            &mut count,
+            &mut result,
+        )?;
+        result[0..count as usize].to_vec()
+    };
+    let mut result = Vec::new();
+    for tag in tags.iter() {
+        let string = feature_tag_to_string(tag.0);
+        result.push(string);
+    }
+    Ok(result)
 }
 
 const DEFAULT_LOCALE_NAME: PCWSTR = windows::core::w!("en-US");
