@@ -631,7 +631,6 @@ impl settings::Settings for ThemeSettings {
             ),
         ]);
 
-        println!("{:#?}", root_schema.schema.object().properties);
         root_schema
             .schema
             .object
