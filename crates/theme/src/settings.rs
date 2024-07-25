@@ -7,6 +7,7 @@ use gpui::{
     ViewContext, WindowContext,
 };
 use refineable::Refineable;
+use schemars::schema::Metadata;
 use schemars::{
     gen::SchemaGenerator,
     schema::{InstanceType, Schema, SchemaObject},
@@ -605,10 +606,33 @@ impl settings::Settings for ThemeSettings {
             .iter()
             .cloned()
             .map(Value::String)
-            .collect();
-        let fonts_schema = SchemaObject {
+            .collect::<Vec<_>>();
+        let ui_font_schema = SchemaObject {
+            instance_type: Some(InstanceType::String.into()),
+            enum_values: Some(available_fonts.clone()),
+            metadata: root_schema
+                .schema
+                .object()
+                .properties
+                .get("ui_font_family")
+                .unwrap()
+                .clone()
+                .into_object()
+                .metadata,
+            ..Default::default()
+        };
+        let buffer_font_schema = SchemaObject {
             instance_type: Some(InstanceType::String.into()),
             enum_values: Some(available_fonts),
+            metadata: root_schema
+                .schema
+                .object()
+                .properties
+                .get("buffer_font_family")
+                .unwrap()
+                .clone()
+                .into_object()
+                .metadata,
             ..Default::default()
         };
         let (ui_font_family, buffer_font_family) = {
@@ -618,12 +642,32 @@ impl settings::Settings for ThemeSettings {
                 settings.buffer_font.family.as_ref(),
             )
         };
-        let ui_font_feature_schema = generate_font_feature_schema(ui_font_family, cx);
-        let buffer_font_feature_schema = generate_font_feature_schema(buffer_font_family, cx);
+        let ui_metadata = root_schema
+            .schema
+            .object()
+            .properties
+            .get("ui_font_features")
+            .unwrap()
+            .clone()
+            .into_object()
+            .metadata;
+        let buffer_metadata = root_schema
+            .schema
+            .object()
+            .properties
+            .get("buffer_font_features")
+            .unwrap()
+            .clone()
+            .into_object()
+            .metadata;
+        let ui_font_feature_schema = generate_font_feature_schema(ui_font_family, cx, ui_metadata);
+        let buffer_font_feature_schema =
+            generate_font_feature_schema(buffer_font_family, cx, buffer_metadata);
 
         root_schema.definitions.extend([
             ("ThemeName".into(), theme_name_schema.into()),
-            ("FontFamilies".into(), fonts_schema.into()),
+            ("UiFontFamilies".into(), ui_font_schema.into()),
+            ("BufferFontFamilies".into(), buffer_font_schema.into()),
             ("UiFontFeatures".into(), ui_font_feature_schema.into()),
             (
                 "BufferFontFeatures".into(),
@@ -640,11 +684,11 @@ impl settings::Settings for ThemeSettings {
             .extend([
                 (
                     "buffer_font_family".to_owned(),
-                    Schema::new_ref("#/definitions/FontFamilies".into()),
+                    Schema::new_ref("#/definitions/BufferFontFamilies".into()),
                 ),
                 (
                     "ui_font_family".to_owned(),
-                    Schema::new_ref("#/definitions/FontFamilies".into()),
+                    Schema::new_ref("#/definitions/UiFontFamilies".into()),
                 ),
                 (
                     "buffer_font_features".to_owned(),
@@ -666,9 +710,14 @@ fn merge<T: Copy>(target: &mut T, value: Option<T>) {
     }
 }
 
-fn generate_font_feature_schema(family_name: &str, cx: &AppContext) -> SchemaObject {
+fn generate_font_feature_schema(
+    family_name: &str,
+    cx: &AppContext,
+    metadata: Option<Box<Metadata>>,
+) -> SchemaObject {
     let mut font_feature_schema = SchemaObject {
         instance_type: Some(InstanceType::Object.into()),
+        metadata,
         ..Default::default()
     };
     let property = {
