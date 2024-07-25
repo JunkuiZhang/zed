@@ -576,13 +576,13 @@ impl DirectWriteState {
 
     fn font_features(&self, family_name: &str) -> Result<Vec<String>> {
         let face = self
-            .font_features_from_collection(family_name, true)
-            .or_else(|_| self.font_features_from_collection(family_name, false))?;
+            .font_faces_from_collection(family_name, true)
+            .or_else(|_| self.font_faces_from_collection(family_name, false))?;
 
         retrieve_font_features(&face, &self.components.analyzer)
     }
 
-    fn font_features_from_collection(
+    fn font_faces_from_collection(
         &self,
         family_name: &str,
         is_system_font: bool,
@@ -602,7 +602,6 @@ impl DirectWriteState {
             )?
         };
         let total_number = unsafe { font.GetFontCount() };
-        println!("number for system: {}->{}", is_system_font, total_number);
         if total_number == 0 {
             return Err(anyhow::anyhow!("No match"));
         }
