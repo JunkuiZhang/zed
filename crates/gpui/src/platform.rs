@@ -26,7 +26,7 @@ use crate::{
     RenderGlyphParams, RenderImage, RenderImageParams, RenderSvgParams, Scene, SharedString, Size,
     SvgSize, Task, TaskLabel, WindowContext, DEFAULT_WINDOW_SIZE,
 };
-use ::windows::Win32::Foundation::{GetLastError, ERROR_ALREADY_EXISTS};
+use ::windows::Win32::Foundation::{GetLastError, ERROR_ALREADY_EXISTS, MAX_PATH};
 use ::windows::Win32::System::Threading::CreateMutexW;
 use anyhow::Result;
 use async_task::Runnable;
@@ -77,6 +77,9 @@ where
     } else {
         format!("Global\\{app_identifier}")
     };
+    if identifier.len() as u32 > MAX_PATH {
+        panic!("The length of app identifier is limited to {MAX_PATH} characters.");
+    }
     unsafe {
         CreateMutexW(None, true, &HSTRING::from(identifier.as_str())).expect(
             format!(
