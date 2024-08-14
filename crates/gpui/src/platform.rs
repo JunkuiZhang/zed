@@ -27,7 +27,7 @@ use crate::{
     SvgSize, Task, TaskLabel, WindowContext, DEFAULT_WINDOW_SIZE,
 };
 use ::windows::Win32::Foundation::{GetLastError, ERROR_ALREADY_EXISTS, MAX_PATH};
-use ::windows::Win32::System::Threading::CreateMutexW;
+use ::windows::Win32::System::Threading::{CreateEventW, CreateMutexW};
 use anyhow::Result;
 use async_task::Runnable;
 use futures::channel::oneshot;
@@ -81,16 +81,24 @@ where
         panic!("The length of app identifier is limited to {MAX_PATH} characters.");
     }
     unsafe {
-        CreateMutexW(None, true, &HSTRING::from(identifier.as_str())).expect(
+        CreateEventW(None, false, false, &HSTRING::from(identifier.as_str())).expect(
             format!(
                 "Unable to create mutex!\n{:?}",
                 std::io::Error::last_os_error()
             )
             .as_str(),
         );
+        // CreateMutexW(None, true, &HSTRING::from(identifier.as_str())).expect(
+        //     format!(
+        //         "Unable to create mutex!\n{:?}",
+        //         std::io::Error::last_os_error()
+        //     )
+        //     .as_str(),
+        // );
     }
     let last_err = unsafe { GetLastError() };
     let is_single_instance = last_err != ERROR_ALREADY_EXISTS;
+    println!("-> Raw instance: {}}", is_single_instance);
     f(is_single_instance)
 }
 
