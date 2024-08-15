@@ -227,7 +227,7 @@ impl Platform for WindowsPlatform {
                     self.redraw_all();
                 }
                 // Single instance event
-                WAIT_EVENT(1) => println!("-> Singe instance event set!"),
+                WAIT_EVENT(1) => println!("-> Single instance event set!"),
                 // Windows thread messages are posted
                 WAIT_EVENT(2) => {
                     let mut msg = MSG::default();

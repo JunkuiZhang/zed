@@ -24,12 +24,6 @@ impl Deref for SafeHandle {
     }
 }
 
-// impl windows_core::Free for SafeHandle {
-//     unsafe fn free(&mut self) {
-//         self.raw.free();
-//     }
-// }
-
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct SafeCursor {
     raw: HCURSOR,
