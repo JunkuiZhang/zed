@@ -27,6 +27,7 @@ use windows::{
             Imaging::{CLSID_WICImagingFactory, IWICImagingFactory},
         },
         Security::Credentials::*,
+        Storage::FileSystem::SYNCHRONIZE,
         System::{
             Com::*,
             DataExchange::{
@@ -59,6 +60,7 @@ pub(crate) struct WindowsPlatform {
     windows_version: WindowsVersion,
     bitmap_factory: ManuallyDrop<IWICImagingFactory>,
     validation_number: usize,
+    single_instance_event: HANDLE,
 }
 
 pub(crate) struct WindowsPlatformState {
@@ -90,7 +92,7 @@ impl WindowsPlatformState {
 }
 
 impl WindowsPlatform {
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(app_identifier: &str) -> Self {
         unsafe {
             OleInitialize(None).expect("unable to initialize Windows OLE");
         }
@@ -113,6 +115,14 @@ impl WindowsPlatform {
             register_clipboard_format(CLIPBOARD_METADATA_FORMAT).unwrap();
         let windows_version = WindowsVersion::new().expect("Error retrieve windows version");
         let validation_number = rand::random::<usize>();
+        let single_instance_event = unsafe {
+            OpenEventW(
+                SYNCHRONIZATION_ACCESS_RIGHTS(SYNCHRONIZE.0),
+                false,
+                &HSTRING::from(app_identifier),
+            )
+            .expect("Unable to open single instance event")
+        };
 
         Self {
             state,
@@ -126,6 +136,7 @@ impl WindowsPlatform {
             windows_version,
             bitmap_factory,
             validation_number,
+            single_instance_event,
         }
     }
 
@@ -202,7 +213,12 @@ impl Platform for WindowsPlatform {
         begin_vsync(*vsync_event);
         'a: loop {
             let wait_result = unsafe {
-                MsgWaitForMultipleObjects(Some(&[*vsync_event]), false, INFINITE, QS_ALLINPUT)
+                MsgWaitForMultipleObjects(
+                    Some(&[*vsync_event, self.single_instance_event]),
+                    false,
+                    INFINITE,
+                    QS_ALLINPUT,
+                )
             };
 
             match wait_result {
@@ -210,8 +226,10 @@ impl Platform for WindowsPlatform {
                 WAIT_EVENT(0) => {
                     self.redraw_all();
                 }
+                // Single instance event
+                WAIT_EVENT(1) => println!("-> Singe instance event set!"),
                 // Windows thread messages are posted
-                WAIT_EVENT(1) => {
+                WAIT_EVENT(2) => {
                     let mut msg = MSG::default();
                     unsafe {
                         while PeekMessageW(&mut msg, None, 0, 0, PM_REMOVE).as_bool() {
@@ -237,7 +255,11 @@ impl Platform for WindowsPlatform {
                     }
                 }
                 _ => {
-                    log::error!("Something went wrong while waiting {:?}", wait_result);
+                    log::error!(
+                        "Something went wrong while waiting {:?}, {:?}",
+                        wait_result,
+                        std::io::Error::last_os_error()
+                    );
                     break;
                 }
             }
@@ -817,6 +839,15 @@ fn read_metadata_from_clipboard(metadata_format: u32) -> Option<String> {
     }
 }
 
+// fn check_single_instance_event(event: SafeHandle) {
+//     std::thread::spawn(move || unsafe {
+//         loop {
+//             WaitForSingleObject(*event, INFINITE);
+//             println!("-> Singe instance event set!");
+//         }
+//     });
+// }
+
 // clipboard
 pub const CLIPBOARD_HASH_FORMAT: PCWSTR = windows::core::w!("zed-text-hash");
 pub const CLIPBOARD_METADATA_FORMAT: PCWSTR = windows::core::w!("zed-metadata");
@@ -827,7 +858,7 @@ mod tests {
 
     #[test]
     fn test_clipboard() {
-        let platform = WindowsPlatform::new();
+        let platform = WindowsPlatform::new("Local\\ZedTestPlatform");
         let item = ClipboardItem::new_string("你好".to_string());
         platform.write_to_clipboard(item.clone());
         assert_eq!(platform.read_from_clipboard(), Some(item));

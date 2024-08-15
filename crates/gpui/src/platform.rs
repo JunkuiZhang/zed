@@ -27,13 +27,14 @@ use crate::{
     SvgSize, Task, TaskLabel, WindowContext, DEFAULT_WINDOW_SIZE,
 };
 use ::windows::Win32::Foundation::{GetLastError, ERROR_ALREADY_EXISTS, MAX_PATH};
-use ::windows::Win32::System::Threading::{CreateEventW, CreateMutexW};
+use ::windows::Win32::System::Threading::{CreateEventW, OpenEventW, SetEvent, EVENT_MODIFY_STATE};
 use anyhow::Result;
 use async_task::Runnable;
 use futures::channel::oneshot;
 use image::codecs::gif::GifDecoder;
 use image::{AnimationDecoder as _, Frame};
 use parking::Unparker;
+use parking_lot::RwLock;
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 use seahash::SeaHasher;
 use serde::{Deserialize, Serialize};
@@ -68,6 +69,9 @@ pub(crate) use test::*;
 pub(crate) use windows::*;
 
 /// TODO:
+pub static APP_IDENTIFIER: RwLock<String> = RwLock::new(String::new());
+
+/// TODO:
 pub fn check_single_instance<F>(app_identifier: &str, local: bool, f: F) -> bool
 where
     F: FnOnce(bool) -> bool,
@@ -80,26 +84,33 @@ where
     if identifier.len() as u32 > MAX_PATH {
         panic!("The length of app identifier is limited to {MAX_PATH} characters.");
     }
+    *APP_IDENTIFIER.write() = identifier.clone();
     unsafe {
         CreateEventW(None, false, false, &HSTRING::from(identifier.as_str())).expect(
             format!(
-                "Unable to create mutex!\n{:?}",
+                "Unable to create instance sync event!\n{:?}",
                 std::io::Error::last_os_error()
             )
             .as_str(),
-        );
-        // CreateMutexW(None, true, &HSTRING::from(identifier.as_str())).expect(
-        //     format!(
-        //         "Unable to create mutex!\n{:?}",
-        //         std::io::Error::last_os_error()
-        //     )
-        //     .as_str(),
-        // );
-    }
+        )
+    };
     let last_err = unsafe { GetLastError() };
     let is_single_instance = last_err != ERROR_ALREADY_EXISTS;
-    println!("-> Raw instance: {}}", is_single_instance);
+    println!("-> Raw instance: {}", is_single_instance);
     f(is_single_instance)
+}
+
+/// TODO:
+pub fn send_message_to_other_instance() {
+    unsafe {
+        let handle = OpenEventW(
+            EVENT_MODIFY_STATE,
+            false,
+            &HSTRING::from(APP_IDENTIFIER.read().as_str()),
+        )
+        .unwrap();
+        SetEvent(handle).log_err();
+    }
 }
 
 #[cfg(target_os = "macos")]
@@ -146,7 +157,7 @@ pub fn guess_compositor() -> &'static str {
 
 #[cfg(target_os = "windows")]
 pub(crate) fn current_platform(_headless: bool) -> Rc<dyn Platform> {
-    Rc::new(WindowsPlatform::new())
+    Rc::new(WindowsPlatform::new(APP_IDENTIFIER.read().as_str()))
 }
 
 pub(crate) trait Platform: 'static {

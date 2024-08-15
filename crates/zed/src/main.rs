@@ -19,8 +19,8 @@ use fs::{Fs, RealFs};
 use futures::{future, StreamExt};
 use git::GitHostingProviderRegistry;
 use gpui::{
-    Action, App, AppContext, AsyncAppContext, Context, DismissEvent, Global, Task,
-    UpdateGlobal as _, VisualContext,
+    send_message_to_other_instance, Action, App, AppContext, AsyncAppContext, Context,
+    DismissEvent, Global, Task, UpdateGlobal as _, VisualContext,
 };
 use image_viewer;
 use language::LanguageRegistry;
@@ -315,6 +315,28 @@ fn init_ui(
 }
 
 fn main() {
+    {
+        let app_identifier = match *release_channel::RELEASE_CHANNEL {
+            release_channel::ReleaseChannel::Dev => "Zed-Editor-Instance-Dev",
+            release_channel::ReleaseChannel::Nightly => "Zed-Editor-Instance-Nightly",
+            release_channel::ReleaseChannel::Preview => "Zed-Editor-Instance-Preview",
+            release_channel::ReleaseChannel::Stable => "Zed-Editor-Instance-Stable",
+        };
+        if !gpui::check_single_instance(app_identifier, true, |single_instance| {
+            // if *db::ZED_STATELESS
+            // || *release_channel::RELEASE_CHANNEL == release_channel::ReleaseChannel::Dev
+            // {
+            // true
+            // } else {
+            single_instance
+            // }
+        }) {
+            println!("zed is already running");
+            send_message_to_other_instance();
+            return;
+        }
+    }
+
     menu::init();
     zed_actions::init();
 
@@ -362,26 +384,6 @@ fn main() {
     //         return;
     //     }
     // }
-    {
-        let app_identifier = match *release_channel::RELEASE_CHANNEL {
-            release_channel::ReleaseChannel::Dev => "Zed-Editor-Instance-Dev",
-            release_channel::ReleaseChannel::Nightly => "Zed-Editor-Instance-Nightly",
-            release_channel::ReleaseChannel::Preview => "Zed-Editor-Instance-Preview",
-            release_channel::ReleaseChannel::Stable => "Zed-Editor-Instance-Stable",
-        };
-        if !gpui::check_single_instance(app_identifier, true, |single_instance| {
-            if *db::ZED_STATELESS
-                || *release_channel::RELEASE_CHANNEL == release_channel::ReleaseChannel::Dev
-            {
-                true
-            } else {
-                single_instance
-            }
-        }) {
-            println!("zed is already running");
-            return;
-        }
-    }
 
     let git_hosting_provider_registry = Arc::new(GitHostingProviderRegistry::new());
     let git_binary_path =
