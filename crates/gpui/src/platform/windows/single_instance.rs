@@ -22,13 +22,12 @@ where
     }
     *APP_IDENTIFIER.write() = identifier.clone();
     unsafe {
-        CreateEventW(None, false, false, &HSTRING::from(identifier.as_str())).expect(
-            format!(
+        CreateEventW(None, false, false, &HSTRING::from(identifier.as_str())).unwrap_or_else(|_| {
+            panic!(
                 "Unable to create instance sync event!\n{:?}",
                 std::io::Error::last_os_error()
             )
-            .as_str(),
-        )
+        })
     };
     let last_err = unsafe { GetLastError() };
     let is_single_instance = last_err != ERROR_ALREADY_EXISTS;
