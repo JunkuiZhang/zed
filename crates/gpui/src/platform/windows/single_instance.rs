@@ -87,9 +87,9 @@ where
 }
 
 pub(crate) fn send_message_to_other_instance() {
-    let msg = "Hello from closed instance";
+    let msg = format!("Hello from closed instance via PID {}", std::process::id());
     println!("=> sending: {}", msg);
-    send_message_through_pipes(msg);
+    send_message_through_pipes(&msg);
     unsafe {
         let handle = OpenEventW(
             EVENT_MODIFY_STATE,
