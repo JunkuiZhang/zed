@@ -19,8 +19,8 @@ use fs::{Fs, RealFs};
 use futures::{future, StreamExt};
 use git::GitHostingProviderRegistry;
 use gpui::{
-    send_message_to_other_instance, Action, App, AppContext, AsyncAppContext, Context,
-    DismissEvent, Global, Task, UpdateGlobal as _, VisualContext,
+    Action, App, AppContext, AsyncAppContext, Context, DismissEvent, Global, Task,
+    UpdateGlobal as _, VisualContext,
 };
 use image_viewer;
 use language::LanguageRegistry;
@@ -333,7 +333,7 @@ fn main() {
             // }
         }) {
             println!("zed is already running");
-            send_message_to_other_instance();
+            gpui::send_message_to_other_instance();
             return;
         }
     }
