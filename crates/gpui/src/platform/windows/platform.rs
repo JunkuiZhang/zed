@@ -27,7 +27,7 @@ use windows::{
             Imaging::{CLSID_WICImagingFactory, IWICImagingFactory},
         },
         Security::Credentials::*,
-        Storage::FileSystem::SYNCHRONIZE,
+        Storage::FileSystem::{PIPE_ACCESS_INBOUND, SYNCHRONIZE},
         System::{
             Com::*,
             DataExchange::{
@@ -37,6 +37,7 @@ use windows::{
             LibraryLoader::*,
             Memory::{GlobalAlloc, GlobalLock, GlobalUnlock, GMEM_MOVEABLE},
             Ole::*,
+            Pipes::{CreateNamedPipeW, PIPE_READMODE_MESSAGE, PIPE_TYPE_MESSAGE},
             SystemInformation::*,
             Threading::*,
         },
@@ -60,7 +61,8 @@ pub(crate) struct WindowsPlatform {
     windows_version: WindowsVersion,
     bitmap_factory: ManuallyDrop<IWICImagingFactory>,
     validation_number: usize,
-    single_instance_event: HANDLE,
+    single_instance_event: Owned<HANDLE>,
+    instance_message_pipe: Owned<HANDLE>,
 }
 
 pub(crate) struct WindowsPlatformState {
@@ -116,12 +118,24 @@ impl WindowsPlatform {
         let windows_version = WindowsVersion::new().expect("Error retrieve windows version");
         let validation_number = rand::random::<usize>();
         let single_instance_event = unsafe {
-            OpenEventW(
+            Owned::new(OpenEventW(
                 SYNCHRONIZATION_ACCESS_RIGHTS(SYNCHRONIZE.0),
                 false,
-                &HSTRING::from(APP_IDENTIFIER.read().as_str()),
+                &HSTRING::from(retrieve_app_event_identifier()),
             )
-            .expect("Unable to open single instance event, make sure you have called `check_single_instance` first!")
+            .expect("Unable to open single instance event, make sure you have called `check_single_instance` first!"))
+        };
+        let instance_message_pipe = unsafe {
+            Owned::new(CreateNamedPipeW(
+                &HSTRING::from(retrieve_named_pipe_identifier()),
+                PIPE_ACCESS_INBOUND,
+                PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE,
+                1,
+                0,
+                1024,
+                0,
+                None,
+            ))
         };
 
         Self {
@@ -137,6 +151,7 @@ impl WindowsPlatform {
             bitmap_factory,
             validation_number,
             single_instance_event,
+            instance_message_pipe,
         }
     }
 
@@ -192,6 +207,10 @@ impl WindowsPlatform {
 
         lock.is_empty()
     }
+
+    fn handle_instance_message(&self) {
+        println!("-> Single instance event set!")
+    }
 }
 
 impl Platform for WindowsPlatform {
@@ -214,7 +233,7 @@ impl Platform for WindowsPlatform {
         'a: loop {
             let wait_result = unsafe {
                 MsgWaitForMultipleObjects(
-                    Some(&[*vsync_event, self.single_instance_event]),
+                    Some(&[*vsync_event, *self.single_instance_event]),
                     false,
                     INFINITE,
                     QS_ALLINPUT,
@@ -223,11 +242,9 @@ impl Platform for WindowsPlatform {
 
             match wait_result {
                 // compositor clock ticked so we should draw a frame
-                WAIT_EVENT(0) => {
-                    self.redraw_all();
-                }
+                WAIT_EVENT(0) => self.redraw_all(),
                 // Single instance event
-                WAIT_EVENT(1) => println!("-> Single instance event set!"),
+                WAIT_EVENT(1) => self.handle_instance_message(),
                 // Windows thread messages are posted
                 WAIT_EVENT(2) => {
                     let mut msg = MSG::default();

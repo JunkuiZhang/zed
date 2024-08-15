@@ -65,11 +65,17 @@ pub(crate) use windows::*;
 
 /// TODO:
 #[cfg(target_os = "windows")]
-pub fn check_single_instance<F>(app_identifier: &str, local: bool, f: F) -> bool
+pub fn register_app_identifier(app_identifier: &str, local: bool) {
+    windows::register_app_identifier(app_identifier, local);
+}
+
+/// TODO:
+#[cfg(target_os = "windows")]
+pub fn check_single_instance<F>(f: F) -> bool
 where
     F: FnOnce(bool) -> bool,
 {
-    windows::check_single_instance(app_identifier, local, f)
+    windows::check_single_instance(f)
 }
 
 /// TODO:

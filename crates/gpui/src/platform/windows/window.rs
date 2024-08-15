@@ -310,7 +310,7 @@ impl WindowsWindow {
         let creation_result = unsafe {
             CreateWindowExW(
                 dwexstyle,
-                classname,
+                &HSTRING::from(classname),
                 &windowname,
                 dwstyle,
                 CW_USEDEFAULT,
@@ -912,15 +912,16 @@ impl WindowBorderOffset {
     }
 }
 
-fn register_wnd_class(icon_handle: HICON) -> PCWSTR {
-    const CLASS_NAME: PCWSTR = w!("Zed::Window");
-
+fn register_wnd_class(icon_handle: HICON) -> String {
     static ONCE: Once = Once::new();
     ONCE.call_once(|| {
+        let identifier = retrieve_app_identifier();
+        let wide = identifier.encode_utf16().chain(Some(0)).collect::<Vec<_>>();
+        let class_name = PCWSTR(wide.as_ptr());
         let wc = WNDCLASSW {
             lpfnWndProc: Some(wnd_proc),
             hIcon: icon_handle,
-            lpszClassName: PCWSTR(CLASS_NAME.as_ptr()),
+            lpszClassName: class_name,
             style: CS_HREDRAW | CS_VREDRAW,
             hInstance: get_module_handle().into(),
             ..Default::default()
@@ -928,7 +929,7 @@ fn register_wnd_class(icon_handle: HICON) -> PCWSTR {
         unsafe { RegisterClassW(&wc) };
     });
 
-    CLASS_NAME
+    retrieve_app_identifier()
 }
 
 unsafe extern "system" fn wnd_proc(
