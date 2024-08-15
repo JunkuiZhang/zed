@@ -9,8 +9,39 @@ use windows::Win32::{
 };
 use windows_core::HSTRING;
 
+use super::APP_SHARED_MEMORY_MAX_SIZE;
+
 static APP_IDENTIFIER: RwLock<String> = RwLock::new(String::new());
-static APP_EVENT_IDENTIFIER: RwLock<String> = RwLock::new(String::new());
+static APP_INSTANCE_EVENT_IDENTIFIER: RwLock<String> = RwLock::new(String::new());
+static APP_SHARED_MEMORY_IDENTIFIER: RwLock<String> = RwLock::new(String::new());
+
+pub(crate) fn register_app_identifier(app_identifier: &str, local: bool) {
+    if app_identifier.len() as u32 > MAX_PATH {
+        panic!(
+            "The length of app identifier `{app_identifier}` is limited to {MAX_PATH} characters."
+        );
+    }
+    *APP_IDENTIFIER.write() = app_identifier.to_string();
+    let (sync_event_identifier, shared_memory_identifier) = if local {
+        (
+            format!("Local\\{app_identifier}-Instance-Event"),
+            format!("Local\\{app_identifier}-Shared-Memory"),
+        )
+    } else {
+        (
+            format!("Global\\{app_identifier}-Instance-Event"),
+            format!("Global\\{app_identifier}-Shared-Memory"),
+        )
+    };
+    if sync_event_identifier.len() as u32 > MAX_PATH {
+        panic!("The length of app identifier `{sync_event_identifier}` is limited to {MAX_PATH} characters.");
+    }
+    *APP_INSTANCE_EVENT_IDENTIFIER.write() = sync_event_identifier;
+    if shared_memory_identifier.len() as u32 > MAX_PATH {
+        panic!("The length of app identifier `{shared_memory_identifier}` is limited to {MAX_PATH} characters.");
+    }
+    *APP_SHARED_MEMORY_IDENTIFIER.write() = shared_memory_identifier;
+}
 
 pub(crate) fn retrieve_app_identifier() -> String {
     let lock = APP_IDENTIFIER.read();
@@ -20,34 +51,20 @@ pub(crate) fn retrieve_app_identifier() -> String {
     lock.to_string()
 }
 
-pub(crate) fn register_app_identifier(app_identifier: &str, local: bool) {
-    if app_identifier.len() as u32 > MAX_PATH {
-        panic!(
-            "The length of app identifier `{app_identifier}` is limited to {MAX_PATH} characters."
-        );
-    }
-    *APP_IDENTIFIER.write() = app_identifier.to_string();
-    let identifier = if local {
-        format!("Local\\{app_identifier}")
-    } else {
-        format!("Global\\{app_identifier}")
-    };
-    if identifier.len() as u32 > MAX_PATH {
-        panic!("The length of app identifier `{identifier}` is limited to {MAX_PATH} characters.");
-    }
-    *APP_EVENT_IDENTIFIER.write() = identifier;
-}
-
-pub(crate) fn retrieve_app_event_identifier() -> String {
-    let lock = APP_EVENT_IDENTIFIER.read();
+pub(crate) fn retrieve_app_instance_event_identifier() -> String {
+    let lock = APP_INSTANCE_EVENT_IDENTIFIER.read();
     if lock.is_empty() {
-        panic!("Make sure you have called `check_single_instance` first.");
+        panic!("Make sure you have called `register_app_identifier` first.");
     }
     lock.to_string()
 }
 
-pub(crate) fn retrieve_shared_memory_identifier() -> String {
-    format!("Shared-Memory-{}", APP_IDENTIFIER.read())
+pub(crate) fn retrieve_app_shared_memory_identifier() -> String {
+    let lock = APP_SHARED_MEMORY_IDENTIFIER.read();
+    if lock.is_empty() {
+        panic!("Make sure you have called `register_app_identifier` first.");
+    }
+    lock.to_string()
 }
 
 pub(crate) fn check_single_instance<F>(f: F) -> bool
@@ -59,7 +76,7 @@ where
             None,
             false,
             false,
-            &HSTRING::from(retrieve_app_event_identifier()),
+            &HSTRING::from(retrieve_app_instance_event_identifier()),
         )
         .expect("Unable to create instance sync event")
     };
@@ -77,7 +94,7 @@ pub(crate) fn send_message_to_other_instance() {
         let handle = OpenEventW(
             EVENT_MODIFY_STATE,
             false,
-            &HSTRING::from(retrieve_app_event_identifier()),
+            &HSTRING::from(retrieve_app_instance_event_identifier()),
         )
         .unwrap();
         SetEvent(handle).log_err();
@@ -85,17 +102,23 @@ pub(crate) fn send_message_to_other_instance() {
 }
 
 fn send_message_through_pipes(message: &str) {
+    if message.len() > APP_SHARED_MEMORY_MAX_SIZE {
+        log::error!(
+            "The length of the message to send should be less than {APP_SHARED_MEMORY_MAX_SIZE}"
+        );
+        return;
+    }
     unsafe {
         let msg = message.as_bytes();
         let pipe = OpenFileMappingW(
             FILE_MAP_WRITE.0,
             false,
-            &HSTRING::from(retrieve_shared_memory_identifier()),
+            &HSTRING::from(retrieve_app_shared_memory_identifier()),
         )
         .unwrap();
         let memory_addr = MapViewOfFile(pipe, FILE_MAP_WRITE, 0, 0, 0);
         std::ptr::copy_nonoverlapping(msg.as_ptr(), memory_addr.Value as _, msg.len());
-        let _ = UnmapViewOfFile(memory_addr).log_err();
-        let _ = CloseHandle(pipe).log_err();
+        UnmapViewOfFile(memory_addr).log_err();
+        CloseHandle(pipe).log_err();
     }
 }

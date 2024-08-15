@@ -123,7 +123,7 @@ impl WindowsPlatform {
             Owned::new(OpenEventW(
                 SYNCHRONIZATION_ACCESS_RIGHTS(SYNCHRONIZE.0),
                 false,
-                &HSTRING::from(retrieve_app_event_identifier()),
+                &HSTRING::from(retrieve_app_instance_event_identifier()),
             )
             .expect("Unable to open single instance event, make sure you have called `check_single_instance` first!"))
         };
@@ -134,8 +134,8 @@ impl WindowsPlatform {
                     None,
                     PAGE_READWRITE,
                     0,
-                    1024,
-                    &HSTRING::from(retrieve_shared_memory_identifier()),
+                    APP_SHARED_MEMORY_MAX_SIZE as u32,
+                    &HSTRING::from(retrieve_app_shared_memory_identifier()),
                 )
                 .expect("Unable to create shared memory"),
             )
@@ -217,7 +217,7 @@ impl WindowsPlatform {
                 MapViewOfFile(*self.instance_message_pipe, FILE_MAP_ALL_ACCESS, 0, 0, 0);
             let string = String::from_utf8_lossy(std::slice::from_raw_parts(
                 memory_addr.Value as *const _ as _,
-                1024,
+                APP_SHARED_MEMORY_MAX_SIZE,
             ))
             .trim_matches('\0')
             .to_string();
@@ -227,10 +227,10 @@ impl WindowsPlatform {
                 memory_addr.Value as _,
                 empty_buffer.len(),
             );
-            UnmapViewOfFile(memory_addr).unwrap();
+            UnmapViewOfFile(memory_addr).log_err();
             string
         };
-        println!("-> Single instance event set!, {},", msg);
+        println!("-> Single instance event, {},", msg);
     }
 }
 
@@ -877,18 +877,11 @@ fn read_metadata_from_clipboard(metadata_format: u32) -> Option<String> {
     }
 }
 
-// fn check_single_instance_event(event: SafeHandle) {
-//     std::thread::spawn(move || unsafe {
-//         loop {
-//             WaitForSingleObject(*event, INFINITE);
-//             println!("-> Singe instance event set!");
-//         }
-//     });
-// }
-
 // clipboard
-pub const CLIPBOARD_HASH_FORMAT: PCWSTR = windows::core::w!("zed-text-hash");
-pub const CLIPBOARD_METADATA_FORMAT: PCWSTR = windows::core::w!("zed-metadata");
+const CLIPBOARD_HASH_FORMAT: PCWSTR = windows::core::w!("zed-text-hash");
+const CLIPBOARD_METADATA_FORMAT: PCWSTR = windows::core::w!("zed-metadata");
+// single instance
+pub(crate) const APP_SHARED_MEMORY_MAX_SIZE: usize = 1024;
 
 #[cfg(test)]
 mod tests {
