@@ -1,13 +1,11 @@
 use parking_lot::RwLock;
 use util::ResultExt;
 use windows::Win32::{
-    Foundation::{GetLastError, ERROR_ALREADY_EXISTS, GENERIC_READ, GENERIC_WRITE, MAX_PATH},
-    Storage::FileSystem::{
-        CreateFileW, OpenFile, FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ, FILE_WRITE_ATTRIBUTES,
-        OPEN_EXISTING,
+    Foundation::{CloseHandle, GetLastError, ERROR_ALREADY_EXISTS, MAX_PATH},
+    System::{
+        Memory::{MapViewOfFile, OpenFileMappingW, UnmapViewOfFile, FILE_MAP_WRITE},
+        Threading::{CreateEventW, OpenEventW, SetEvent, EVENT_MODIFY_STATE},
     },
-    System::Threading::{CreateEventW, CreateMutexW, OpenEventW, SetEvent, EVENT_MODIFY_STATE},
-    UI::WindowsAndMessaging::FindWindowW,
 };
 use windows_core::HSTRING;
 
@@ -48,28 +46,22 @@ pub(crate) fn retrieve_app_event_identifier() -> String {
     lock.to_string()
 }
 
-pub(crate) fn retrieve_named_pipe_identifier() -> String {
-    format!("\\\\.\\pipe\\{}", APP_IDENTIFIER.read())
+pub(crate) fn retrieve_shared_memory_identifier() -> String {
+    format!("Shared-Memory-{}", APP_IDENTIFIER.read())
 }
 
 pub(crate) fn check_single_instance<F>(f: F) -> bool
 where
     F: FnOnce(bool) -> bool,
 {
-    let identifier = retrieve_app_event_identifier();
     unsafe {
-        // CreateMutexW(None, true, &HSTRING::from(identifier.as_str())).unwrap_or_else(|_| {
-        //     panic!(
-        //         "Unable to create instance sync event!\n{:?}",
-        //         std::io::Error::last_os_error()
-        //     )
-        // })
-        CreateEventW(None, false, false, &HSTRING::from(identifier.as_str())).unwrap_or_else(|_| {
-            panic!(
-                "Unable to create instance sync event!\n{:?}",
-                std::io::Error::last_os_error()
-            )
-        })
+        CreateEventW(
+            None,
+            false,
+            false,
+            &HSTRING::from(retrieve_app_event_identifier()),
+        )
+        .expect("Unable to create instance sync event")
     };
     let last_err = unsafe { GetLastError() };
     let is_single_instance = last_err != ERROR_ALREADY_EXISTS;
@@ -78,33 +70,32 @@ where
 }
 
 pub(crate) fn send_message_to_other_instance() {
-    // let handle = unsafe { FindWindowW(&HSTRING::from(retrieve_app_identifier()), None).unwrap() };
-    // assert!(!handle.is_invalid());
-    let msg = "Hello from closed instance".to_owned();
+    let msg = "Hello from closed instance";
     println!("=> sending: {}", msg);
+    send_message_through_pipes(msg);
     unsafe {
-        send_message_through_pipes();
         let handle = OpenEventW(
             EVENT_MODIFY_STATE,
             false,
-            &HSTRING::from(APP_IDENTIFIER.read().as_str()),
+            &HSTRING::from(retrieve_app_event_identifier()),
         )
         .unwrap();
         SetEvent(handle).log_err();
     }
 }
 
-fn send_message_through_pipes() {
+fn send_message_through_pipes(message: &str) {
     unsafe {
-        let pipe = CreateFileW(
-            &HSTRING::from(retrieve_named_pipe_identifier()),
-            GENERIC_WRITE.0,
-            FILE_SHARE_READ,
-            None,
-            OPEN_EXISTING,
-            FILE_ATTRIBUTE_NORMAL,
-            None,
+        let msg = message.as_bytes();
+        let pipe = OpenFileMappingW(
+            FILE_MAP_WRITE.0,
+            false,
+            &HSTRING::from(retrieve_shared_memory_identifier()),
         )
         .unwrap();
+        let memory_addr = MapViewOfFile(pipe, FILE_MAP_WRITE, 0, 0, 0);
+        std::ptr::copy_nonoverlapping(msg.as_ptr(), memory_addr.Value as _, msg.len());
+        let _ = UnmapViewOfFile(memory_addr).log_err();
+        let _ = CloseHandle(pipe).log_err();
     }
 }

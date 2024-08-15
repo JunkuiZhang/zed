@@ -27,7 +27,7 @@ use windows::{
             Imaging::{CLSID_WICImagingFactory, IWICImagingFactory},
         },
         Security::Credentials::*,
-        Storage::FileSystem::{PIPE_ACCESS_INBOUND, SYNCHRONIZE},
+        Storage::FileSystem::SYNCHRONIZE,
         System::{
             Com::*,
             DataExchange::{
@@ -35,9 +35,11 @@ use windows::{
                 RegisterClipboardFormatW, SetClipboardData,
             },
             LibraryLoader::*,
-            Memory::{GlobalAlloc, GlobalLock, GlobalUnlock, GMEM_MOVEABLE},
+            Memory::{
+                CreateFileMappingW, GlobalAlloc, GlobalLock, GlobalUnlock, MapViewOfFile,
+                UnmapViewOfFile, FILE_MAP_ALL_ACCESS, GMEM_MOVEABLE, PAGE_READWRITE,
+            },
             Ole::*,
-            Pipes::{CreateNamedPipeW, PIPE_READMODE_MESSAGE, PIPE_TYPE_MESSAGE},
             SystemInformation::*,
             Threading::*,
         },
@@ -126,16 +128,17 @@ impl WindowsPlatform {
             .expect("Unable to open single instance event, make sure you have called `check_single_instance` first!"))
         };
         let instance_message_pipe = unsafe {
-            Owned::new(CreateNamedPipeW(
-                &HSTRING::from(retrieve_named_pipe_identifier()),
-                PIPE_ACCESS_INBOUND,
-                PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE,
-                1,
-                0,
-                1024,
-                0,
-                None,
-            ))
+            Owned::new(
+                CreateFileMappingW(
+                    INVALID_HANDLE_VALUE,
+                    None,
+                    PAGE_READWRITE,
+                    0,
+                    1024,
+                    &HSTRING::from(retrieve_shared_memory_identifier()),
+                )
+                .expect("Unable to create shared memory"),
+            )
         };
 
         Self {
@@ -209,7 +212,25 @@ impl WindowsPlatform {
     }
 
     fn handle_instance_message(&self) {
-        println!("-> Single instance event set!")
+        let msg = unsafe {
+            let memory_addr =
+                MapViewOfFile(*self.instance_message_pipe, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+            let string = String::from_utf8_lossy(std::slice::from_raw_parts(
+                memory_addr.Value as *const _ as _,
+                1024,
+            ))
+            .trim_matches('\0')
+            .to_string();
+            let empty_buffer = vec![0u8; string.len()];
+            std::ptr::copy_nonoverlapping(
+                empty_buffer.as_ptr(),
+                memory_addr.Value as _,
+                empty_buffer.len(),
+            );
+            UnmapViewOfFile(memory_addr).unwrap();
+            string
+        };
+        println!("-> Single instance event set!, {},", msg);
     }
 }
 
