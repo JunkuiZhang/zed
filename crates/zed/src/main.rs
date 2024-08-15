@@ -315,6 +315,7 @@ fn init_ui(
 }
 
 fn main() {
+    #[cfg(target_os = "windows")]
     {
         let app_identifier = match *release_channel::RELEASE_CHANNEL {
             release_channel::ReleaseChannel::Dev => "Zed-Editor-Instance-Dev",
@@ -376,14 +377,14 @@ fn main() {
             }
         }
     }
-    // #[cfg(not(target_os = "linux"))]
-    // {
-    //     use zed::only_instance::*;
-    //     if ensure_only_instance() != IsOnlyInstance::Yes {
-    //         println!("zed is already running");
-    //         return;
-    //     }
-    // }
+    #[cfg(not(any(target_os = "linux", target_os = "windows")))]
+    {
+        use zed::only_instance::*;
+        if ensure_only_instance() != IsOnlyInstance::Yes {
+            println!("zed is already running");
+            return;
+        }
+    }
 
     let git_hosting_provider_registry = Arc::new(GitHostingProviderRegistry::new());
     let git_binary_path =

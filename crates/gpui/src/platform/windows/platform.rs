@@ -92,7 +92,7 @@ impl WindowsPlatformState {
 }
 
 impl WindowsPlatform {
-    pub(crate) fn new(app_identifier: &str) -> Self {
+    pub(crate) fn new() -> Self {
         unsafe {
             OleInitialize(None).expect("unable to initialize Windows OLE");
         }
@@ -119,9 +119,9 @@ impl WindowsPlatform {
             OpenEventW(
                 SYNCHRONIZATION_ACCESS_RIGHTS(SYNCHRONIZE.0),
                 false,
-                &HSTRING::from(app_identifier),
+                &HSTRING::from(APP_IDENTIFIER.read().as_str()),
             )
-            .expect("Unable to open single instance event")
+            .expect("Unable to open single instance event, make sure you have called `check_single_instance` first!")
         };
 
         Self {
@@ -858,7 +858,7 @@ mod tests {
 
     #[test]
     fn test_clipboard() {
-        let platform = WindowsPlatform::new("Local\\ZedTestPlatform");
+        let platform = WindowsPlatform::new();
         let item = ClipboardItem::new_string("你好".to_string());
         platform.write_to_clipboard(item.clone());
         assert_eq!(platform.read_from_clipboard(), Some(item));
