@@ -64,7 +64,7 @@ pub(crate) struct WindowsPlatform {
     bitmap_factory: ManuallyDrop<IWICImagingFactory>,
     validation_number: usize,
     single_instance_event: Owned<HANDLE>,
-    instance_message_pipe: Owned<HANDLE>,
+    shared_memory_handle: Owned<HANDLE>,
 }
 
 pub(crate) struct WindowsPlatformState {
@@ -127,7 +127,7 @@ impl WindowsPlatform {
             )
             .expect("Unable to open single instance event, make sure you have called `check_single_instance` first!"))
         };
-        let instance_message_pipe = unsafe {
+        let shared_memory_handle = unsafe {
             Owned::new(
                 CreateFileMappingW(
                     INVALID_HANDLE_VALUE,
@@ -154,7 +154,7 @@ impl WindowsPlatform {
             bitmap_factory,
             validation_number,
             single_instance_event,
-            instance_message_pipe,
+            shared_memory_handle,
         }
     }
 
@@ -214,7 +214,7 @@ impl WindowsPlatform {
     fn handle_instance_message(&self) {
         let msg = unsafe {
             let memory_addr =
-                MapViewOfFile(*self.instance_message_pipe, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+                MapViewOfFile(*self.shared_memory_handle, FILE_MAP_ALL_ACCESS, 0, 0, 0);
             let string = String::from_utf8_lossy(std::slice::from_raw_parts(
                 memory_addr.Value as *const _ as _,
                 APP_SHARED_MEMORY_MAX_SIZE,
