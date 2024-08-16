@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use parking_lot::RwLock;
 use util::ResultExt;
 use windows::Win32::{
@@ -87,9 +88,10 @@ where
 }
 
 pub(crate) fn send_message_to_other_instance() {
-    let msg = format!("Hello from closed instance via PID {}", std::process::id());
-    println!("=> sending: {}", msg);
-    send_message_through_pipes(&msg);
+    // let msg = format!("Hello from closed instance via PID {}", std::process::id());
+    let args = std::env::args().nth(1).unwrap();
+    println!("=> sending: {}", args);
+    send_message_through_pipes(&args);
     unsafe {
         let handle = OpenEventW(
             EVENT_MODIFY_STATE,

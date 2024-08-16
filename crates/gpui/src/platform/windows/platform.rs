@@ -237,6 +237,23 @@ impl WindowsPlatform {
             string
         };
         println!("-> Single instance event, {},", msg);
+        let mut lock = self.state.borrow_mut();
+        if let Some(mut callback) = lock.callbacks.app_menu_action.take() {
+            let Some(action) = lock
+                .dock_menu_actions
+                .iter()
+                .find(|(name, _)| name.as_str() == msg.as_str())
+                .map(|(_, action)| action.boxed_clone())
+            else {
+                lock.callbacks.app_menu_action = Some(callback);
+                log::error!("Dock menu {msg} not found");
+                return;
+            };
+            drop(lock);
+            println!("==> Performing action: {msg}");
+            callback(&*action);
+            self.state.borrow_mut().callbacks.app_menu_action = Some(callback);
+        }
     }
 
     fn configure_jump_list(&self, menus: Vec<MenuItem>) -> Result<()> {
