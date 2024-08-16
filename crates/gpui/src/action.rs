@@ -52,6 +52,15 @@ pub trait Action: 'static + Send {
     /// Get the name of this action, for displaying in UI
     fn name(&self) -> &str;
 
+    /// Get the arguments that pass to the new instance if this action
+    /// requires a new instance to perform.
+    ///
+    /// Platform: Windows and Linux only.
+    /// Usage: Dock menu only.
+    fn arguments(&self) -> &str {
+        self.name()
+    }
+
     /// Get the name of this action for debugging
     fn debug_name() -> &'static str
     where

@@ -39,13 +39,6 @@ pub enum MenuItem {
         /// The OS Action that corresponds to this action, if any
         /// See [`OsAction`] for more information
         os_action: Option<OsAction>,
-
-        /// The arguments that pass to the new instance if this action
-        /// requires a new instance to perform.
-        ///
-        /// Platform: Windows and Linux only.
-        /// Usage: Dock menu only.
-        arguments: Option<String>,
     },
 }
 
@@ -66,21 +59,6 @@ impl MenuItem {
             name: name.into(),
             action: Box::new(action),
             os_action: None,
-            arguments: None,
-        }
-    }
-
-    /// Creates a new dock menu item that invokes an action
-    pub fn dock_menu_action(
-        name: impl Into<SharedString>,
-        action: impl Action,
-        arguments: &str,
-    ) -> Self {
-        Self::Action {
-            name: name.into(),
-            action: Box::new(action),
-            os_action: None,
-            arguments: Some(arguments.to_string()),
         }
     }
 
@@ -94,7 +72,6 @@ impl MenuItem {
             name: name.into(),
             action: Box::new(action),
             os_action: Some(os_action),
-            arguments: None,
         }
     }
 

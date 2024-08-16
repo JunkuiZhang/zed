@@ -267,21 +267,12 @@ impl WindowsPlatform {
                     log::error!("Set `MenuItemSubmenu` for dock menu on Windows is not supported.");
                     continue;
                 }
-                MenuItem::Action {
-                    name,
-                    action,
-                    arguments,
-                    ..
-                } => {
-                    let Some(arguments) = arguments else {
-                        log::error!("Set `MenuItem::Action` for dock menu on Windows, the `arguments` parameter should not be `None`.");
-                        continue;
-                    };
-                    let item_args = HSTRING::from(&arguments);
+                MenuItem::Action { name, action, .. } => {
+                    let item_args = HSTRING::from(action.arguments());
                     self.state
                         .borrow_mut()
                         .dock_menu_actions
-                        .push((arguments, action));
+                        .push((action.arguments().to_string(), action));
                     JumpListItem::CreateWithArguments(&item_args, &HSTRING::from(name.as_ref()))?
                 }
             };

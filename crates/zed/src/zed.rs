@@ -785,11 +785,7 @@ fn reload_keymaps(cx: &mut AppContext, keymap_content: &KeymapFile) {
     load_default_keymap(cx);
     keymap_content.clone().add_to_cx(cx).log_err();
     cx.set_menus(app_menus());
-    cx.set_dock_menu(vec![MenuItem::dock_menu_action(
-        "New Window",
-        workspace::NewWindow,
-        "NewWindow",
-    )])
+    cx.set_dock_menu(vec![MenuItem::action("New Window", workspace::NewWindow)])
 }
 
 pub fn load_default_keymap(cx: &mut AppContext) {
