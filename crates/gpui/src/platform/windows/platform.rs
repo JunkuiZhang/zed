@@ -45,7 +45,10 @@ use windows::{
         },
         UI::{Input::KeyboardAndMouse::*, Shell::*, WindowsAndMessaging::*},
     },
-    UI::ViewManagement::UISettings,
+    UI::{
+        StartScreen::{JumpList, JumpListItem},
+        ViewManagement::UISettings,
+    },
 };
 
 use crate::*;
@@ -69,6 +72,7 @@ pub(crate) struct WindowsPlatform {
 
 pub(crate) struct WindowsPlatformState {
     callbacks: PlatformCallbacks,
+    dock_menu_actions: Vec<(String, Box<dyn Action>)>,
     // NOTE: standard cursor handles don't need to close.
     pub(crate) current_cursor: HCURSOR,
 }
@@ -86,10 +90,12 @@ struct PlatformCallbacks {
 impl WindowsPlatformState {
     fn new() -> Self {
         let callbacks = PlatformCallbacks::default();
+        let dock_menu_actions = Vec::new();
         let current_cursor = load_cursor(CursorStyle::Arrow);
 
         Self {
             callbacks,
+            dock_menu_actions,
             current_cursor,
         }
     }
@@ -231,6 +237,41 @@ impl WindowsPlatform {
             string
         };
         println!("-> Single instance event, {},", msg);
+    }
+
+    fn configure_jump_list(&self, menus: Vec<MenuItem>) -> Result<()> {
+        let jump_list = JumpList::LoadCurrentAsync()?.get()?;
+        let items = jump_list.Items()?;
+        items.Clear()?;
+        for item in menus {
+            let item = match item {
+                MenuItem::Separator => JumpListItem::CreateSeparator()?,
+                MenuItem::Submenu(_) => {
+                    log::error!("Set `MenuItemSubmenu` for dock menu on Windows is not supported.");
+                    continue;
+                }
+                MenuItem::Action {
+                    name,
+                    action,
+                    arguments,
+                    ..
+                } => {
+                    let Some(arguments) = arguments else {
+                        log::error!("Set `MenuItem::Action` for dock menu on Windows, the `arguments` parameter should not be `None`.");
+                        continue;
+                    };
+                    let item_args = HSTRING::from(&arguments);
+                    self.state
+                        .borrow_mut()
+                        .dock_menu_actions
+                        .push((arguments, action));
+                    JumpListItem::CreateWithArguments(&item_args, &HSTRING::from(name.as_ref()))?
+                }
+            };
+            items.Append(&item)?;
+        }
+        jump_list.SaveAsync()?.get()?;
+        Ok(())
     }
 }
 
@@ -550,7 +591,10 @@ impl Platform for WindowsPlatform {
 
     // todo(windows)
     fn set_menus(&self, menus: Vec<Menu>, keymap: &Keymap) {}
-    fn set_dock_menu(&self, menus: Vec<MenuItem>, keymap: &Keymap) {}
+
+    fn set_dock_menu(&self, menus: Vec<MenuItem>, _: &Keymap) {
+        self.configure_jump_list(menus).log_err();
+    }
 
     fn on_app_menu_action(&self, callback: Box<dyn FnMut(&dyn Action)>) {
         self.state.borrow_mut().callbacks.app_menu_action = Some(callback);
