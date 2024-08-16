@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use parking_lot::RwLock;
 use util::ResultExt;
 use windows::Win32::{

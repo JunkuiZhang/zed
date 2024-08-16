@@ -84,7 +84,6 @@ impl MenuItem {
                 name,
                 action,
                 os_action,
-                ..
             } => OwnedMenuItem::Action {
                 name: name.into(),
                 action,
