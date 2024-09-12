@@ -8,6 +8,7 @@ use std::{
 
 use ::util::ResultExt;
 use anyhow::{anyhow, Context, Result};
+use async_task::Runnable;
 use futures::channel::oneshot::{self, Receiver};
 use itertools::Itertools;
 use parking_lot::RwLock;
@@ -54,6 +55,8 @@ pub(crate) struct WindowsPlatform {
     windows_version: WindowsVersion,
     bitmap_factory: ManuallyDrop<IWICImagingFactory>,
     validation_number: usize,
+    main_receiver: flume::Receiver<Runnable>,
+    dispatch_event: HANDLE,
 }
 
 pub(crate) struct WindowsPlatformState {
@@ -89,7 +92,10 @@ impl WindowsPlatform {
         unsafe {
             OleInitialize(None).expect("unable to initialize Windows OLE");
         }
-        let dispatcher = Arc::new(WindowsDispatcher::new());
+        let (main_sender, main_receiver) = flume::unbounded::<Runnable>();
+        let dispatch_event = unsafe { CreateEventW(None, false, false, None) }.unwrap();
+        let dispatcher = Arc::new(WindowsDispatcher::new(main_sender, dispatch_event));
+        // let dispatcher = Arc::new(WindowsDispatcher::new());
         let background_executor = BackgroundExecutor::new(dispatcher.clone());
         let foreground_executor = ForegroundExecutor::new(dispatcher);
         let bitmap_factory = ManuallyDrop::new(unsafe {
@@ -121,6 +127,8 @@ impl WindowsPlatform {
             windows_version,
             bitmap_factory,
             validation_number,
+            main_receiver,
+            dispatch_event,
         }
     }
 
@@ -176,6 +184,13 @@ impl WindowsPlatform {
 
         lock.is_empty()
     }
+
+    #[inline]
+    fn run_foreground_tasks(&self) {
+        for runnable in self.main_receiver.drain() {
+            runnable.run();
+        }
+    }
 }
 
 impl Platform for WindowsPlatform {
@@ -197,7 +212,12 @@ impl Platform for WindowsPlatform {
         begin_vsync(*vsync_event);
         'a: loop {
             let wait_result = unsafe {
-                MsgWaitForMultipleObjects(Some(&[*vsync_event]), false, INFINITE, QS_ALLINPUT)
+                MsgWaitForMultipleObjects(
+                    Some(&[*vsync_event, self.dispatch_event]),
+                    false,
+                    INFINITE,
+                    QS_ALLINPUT,
+                )
             };
 
             match wait_result {
@@ -205,8 +225,9 @@ impl Platform for WindowsPlatform {
                 WAIT_EVENT(0) => {
                     self.redraw_all();
                 }
+                WAIT_EVENT(1) => self.run_foreground_tasks(),
                 // Windows thread messages are posted
-                WAIT_EVENT(1) => {
+                WAIT_EVENT(2) => {
                     let mut msg = MSG::default();
                     unsafe {
                         while PeekMessageW(&mut msg, None, 0, 0, PM_REMOVE).as_bool() {
@@ -229,6 +250,7 @@ impl Platform for WindowsPlatform {
                                 }
                             }
                         }
+                        self.run_foreground_tasks();
                     }
                 }
                 _ => {
