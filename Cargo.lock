@@ -6402,6 +6402,7 @@ dependencies = [
  "tree-sitter-yaml",
  "unindent",
  "util",
+ "windows 0.58.0",
  "workspace",
 ]
 
