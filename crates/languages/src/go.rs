@@ -8,7 +8,10 @@ pub use language::*;
 use lsp::{LanguageServerBinary, LanguageServerName};
 use regex::Regex;
 use serde_json::json;
-use smol::{fs, process};
+use smol::{
+    fs,
+    process::{self},
+};
 use std::{
     any::Any,
     borrow::Cow,
@@ -89,7 +92,11 @@ impl super::LspAdapter for GoLspAdapter {
 
         let delegate = delegate.clone();
         Some(cx.spawn(|cx| async move {
-            if delegate.which("go".as_ref()).await.is_none() {
+            let mut command = util::command::new_smol_command("go");
+            command.args(["version"]);
+
+            let install_output = command.output().await;
+            if install_output.is_err() {
                 if DID_SHOW_NOTIFICATION
                     .compare_exchange(false, true, SeqCst, SeqCst)
                     .is_ok()
