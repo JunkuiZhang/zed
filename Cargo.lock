@@ -4102,6 +4102,7 @@ dependencies = [
  "serde_json",
  "settings",
  "smol",
+ "util",
 ]
 
 [[package]]
