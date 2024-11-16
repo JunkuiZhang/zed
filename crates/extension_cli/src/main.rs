@@ -2,7 +2,6 @@ use std::{
     collections::HashMap,
     env, fs,
     path::{Path, PathBuf},
-    process::Command,
     sync::Arc,
 };
 
@@ -87,7 +86,7 @@ async fn main() -> Result<()> {
         .await
         .context("failed to copy extension resources")?;
 
-    let tar_output = Command::new("tar")
+    let tar_output = util::command::new_std_command("tar")
         .current_dir(&output_dir)
         .args(["-czvf", "archive.tar.gz", "-C", "archive", "."])
         .output()

@@ -1964,7 +1964,7 @@ impl SshRemoteConnection {
         if platform.arch == std::env::consts::ARCH && platform.os == std::env::consts::OS {
             delegate.set_status(Some("Building remote server binary from source"), cx);
             log::info!("building remote server binary from source");
-            run_cmd(Command::new("cargo").args([
+            run_cmd(util::command::new_smol_command("cargo").args([
                 "build",
                 "--package",
                 "remote_server",
@@ -1977,7 +1977,7 @@ impl SshRemoteConnection {
 
             delegate.set_status(Some("Compressing binary"), cx);
 
-            run_cmd(Command::new("gzip").args([
+            run_cmd(util::command::new_smol_command("gzip").args([
                 "-9",
                 "-f",
                 "target/remote_server/debug/remote_server",
@@ -1994,7 +1994,7 @@ impl SshRemoteConnection {
 
         delegate.set_status(Some("Installing cross.rs for cross-compilation"), cx);
         log::info!("installing cross");
-        run_cmd(Command::new("cargo").args([
+        run_cmd(util::command::new_smol_command("cargo").args([
             "install",
             "cross",
             "--git",
@@ -2011,7 +2011,7 @@ impl SshRemoteConnection {
         );
         log::info!("building remote server binary from source for {}", &triple);
         run_cmd(
-            Command::new("cross")
+            util::command::new_smol_command("cross")
                 .args([
                     "build",
                     "--package",
@@ -2032,7 +2032,7 @@ impl SshRemoteConnection {
 
         delegate.set_status(Some("Compressing binary"), cx);
 
-        run_cmd(Command::new("gzip").args([
+        run_cmd(util::command::new_smol_command("gzip").args([
             "-9",
             "-f",
             &format!("target/remote_server/{}/debug/remote_server", triple),

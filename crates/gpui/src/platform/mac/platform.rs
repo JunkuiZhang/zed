@@ -496,7 +496,7 @@ impl Platform for MacPlatform {
             open "$1"
         "#;
 
-        let restart_process = Command::new("/bin/bash")
+        let restart_process = util::command::new_std_command("/bin/bash")
             .arg("-c")
             .arg(script)
             .arg(app_pid)
@@ -782,7 +782,7 @@ impl Platform for MacPlatform {
             .lock()
             .background_executor
             .spawn(async move {
-                std::process::Command::new("open")
+                util::command::new_std_command("open")
                     .arg(path)
                     .spawn()
                     .expect("Failed to open file");

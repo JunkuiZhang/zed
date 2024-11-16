@@ -4213,6 +4213,7 @@ dependencies = [
  "tokio",
  "toml 0.8.19",
  "tree-sitter",
+ "util",
  "wasmtime",
 ]
 
@@ -15604,6 +15605,7 @@ dependencies = [
  "cargo_metadata",
  "cargo_toml",
  "clap",
+ "util",
 ]
 
 [[package]]

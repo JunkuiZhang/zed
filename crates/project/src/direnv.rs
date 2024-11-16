@@ -39,7 +39,7 @@ pub async fn load_direnv_environment(
         return Err(DirenvError::NotFound);
     };
 
-    let Some(direnv_output) = smol::process::Command::new(direnv_path)
+    let Some(direnv_output) = util::command::new_smol_command(direnv_path)
         .args(["export", "json"])
         .envs(env)
         .env("TERM", "dumb")

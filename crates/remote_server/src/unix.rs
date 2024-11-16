@@ -591,7 +591,7 @@ pub fn execute_proxy(identifier: String, is_reconnecting: bool) -> Result<()> {
 
 fn kill_running_server(pid: u32, paths: &ServerPaths) -> Result<()> {
     log::info!("killing existing server with PID {}", pid);
-    std::process::Command::new("kill")
+    util::command::new_std_command("kill")
         .arg(pid.to_string())
         .output()
         .context("failed to kill existing server")?;
@@ -620,7 +620,7 @@ fn spawn_server(paths: &ServerPaths) -> Result<()> {
     }
 
     let binary_name = std::env::current_exe()?;
-    let mut server_process = std::process::Command::new(binary_name);
+    let mut server_process = util::command::new_std_command(binary_name);
     server_process
         .arg("run")
         .arg("--log-file")
@@ -670,7 +670,7 @@ fn check_pid_file(path: &Path) -> Result<Option<u32>> {
     };
 
     log::debug!("Checking if process with PID {} exists...", pid);
-    match std::process::Command::new("kill")
+    match util::command::new_std_command("kill")
         .arg("-0")
         .arg(pid.to_string())
         .output()

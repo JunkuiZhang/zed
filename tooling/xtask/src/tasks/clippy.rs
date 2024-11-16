@@ -1,5 +1,3 @@
-use std::process::Command;
-
 use anyhow::{bail, Context, Result};
 use clap::Parser;
 
@@ -17,7 +15,7 @@ pub struct ClippyArgs {
 pub fn run_clippy(args: ClippyArgs) -> Result<()> {
     let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
 
-    let mut clippy_command = Command::new(&cargo);
+    let mut clippy_command = util::command::new_std_command(&cargo);
     clippy_command.arg("clippy");
 
     if let Some(package) = args.package.as_ref() {

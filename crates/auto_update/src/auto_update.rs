@@ -18,7 +18,7 @@ use serde_derive::Serialize;
 use smol::{fs, io::AsyncReadExt};
 
 use settings::{Settings, SettingsSources, SettingsStore};
-use smol::{fs::File, process::Command};
+use smol::fs::File;
 
 use http_client::{AsyncBody, HttpClient, HttpClientWithUrl};
 use release_channel::{AppCommitSha, AppVersion, ReleaseChannel};
@@ -95,7 +95,7 @@ struct MacOsUnmounter {
 
 impl Drop for MacOsUnmounter {
     fn drop(&mut self) {
-        let unmount_output = std::process::Command::new("hdiutil")
+        let unmount_output = util::command::new_std_command("hdiutil")
             .args(["detach", "-force"])
             .arg(&self.mount_path)
             .output();
@@ -780,7 +780,7 @@ async fn install_release_linux(
         .await
         .context("failed to create directory into which to extract update")?;
 
-    let output = Command::new("tar")
+    let output = util::command::new_smol_command("tar")
         .arg("-xzf")
         .arg(&downloaded_tar_gz)
         .arg("-C")
@@ -815,7 +815,7 @@ async fn install_release_linux(
         to = PathBuf::from(prefix);
     }
 
-    let output = Command::new("rsync")
+    let output = util::command::new_smol_command("rsync")
         .args(["-av", "--delete"])
         .arg(&from)
         .arg(&to)
@@ -847,7 +847,7 @@ async fn install_release_macos(
     let mut mounted_app_path: OsString = mount_path.join(running_app_filename).into();
 
     mounted_app_path.push("/");
-    let output = Command::new("hdiutil")
+    let output = util::command::new_smol_command("hdiutil")
         .args(["attach", "-nobrowse"])
         .arg(&downloaded_dmg)
         .arg("-mountroot")
@@ -866,7 +866,7 @@ async fn install_release_macos(
         mount_path: mount_path.clone(),
     };
 
-    let output = Command::new("rsync")
+    let output = util::command::new_smol_command("rsync")
         .args(["-av", "--delete"])
         .arg(&mounted_app_path)
         .arg(&running_app_path)

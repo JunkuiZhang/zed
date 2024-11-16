@@ -41,7 +41,6 @@ use settings::{
     handle_settings_file_changes, watch_config_file, InvalidSettingsError, Settings, SettingsStore,
 };
 use simplelog::ConfigBuilder;
-use smol::process::Command;
 use snippet_provider::SnippetRegistry;
 use std::{
     env,
@@ -1063,7 +1062,7 @@ async fn load_login_shell_environment() -> Result<()> {
         shell_cmd_prefix.as_deref().unwrap_or("")
     );
 
-    let output = Command::new(&shell)
+    let output = util::command::new_smol_command(&shell)
         .args(["-l", "-i", "-c", &shell_cmd])
         .output()
         .await

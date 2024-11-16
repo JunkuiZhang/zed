@@ -300,7 +300,7 @@ mod linux {
         }
 
         fn run_foreground(&self, ipc_url: String) -> io::Result<ExitStatus> {
-            std::process::Command::new(self.0.clone())
+            util::command::new_std_command(self.0.clone())
                 .arg(ipc_url)
                 .status()
         }
