@@ -31,6 +31,14 @@ use util::{
     TryFutureExt as _,
 };
 
+fn to_path_string(path: &str) -> String {
+    if cfg!(target_os = "windows") {
+        path.replace("/dir", "C:/dir")
+    } else {
+        path.to_string()
+    }
+}
+
 #[gpui::test]
 async fn test_block_via_channel(cx: &mut gpui::TestAppContext) {
     cx.executor().allow_parking();
@@ -2823,14 +2831,14 @@ async fn test_apply_code_actions_with_commands(cx: &mut gpui::TestAppContext) {
 
     let fs = FakeFs::new(cx.executor());
     fs.insert_tree(
-        "/dir",
+        to_path_string("/dir"),
         json!({
             "a.ts": "a",
         }),
     )
     .await;
 
-    let project = Project::test(fs, ["/dir".as_ref()], cx).await;
+    let project = Project::test(fs, [to_path_string("/dir").as_ref()], cx).await;
 
     let language_registry = project.read_with(cx, |project, _| project.languages().clone());
     language_registry.add(typescript_lang());
@@ -2851,7 +2859,9 @@ async fn test_apply_code_actions_with_commands(cx: &mut gpui::TestAppContext) {
     );
 
     let (buffer, _handle) = project
-        .update(cx, |p, cx| p.open_local_buffer_with_lsp("/dir/a.ts", cx))
+        .update(cx, |p, cx| {
+            p.open_local_buffer_with_lsp(to_path_string("/dir/a.ts"), cx)
+        })
         .await
         .unwrap();
 
@@ -2916,7 +2926,8 @@ async fn test_apply_code_actions_with_commands(cx: &mut gpui::TestAppContext) {
                                 edit: lsp::WorkspaceEdit {
                                     changes: Some(
                                         [(
-                                            lsp::Url::from_file_path("/dir/a.ts").unwrap(),
+                                            lsp::Url::from_file_path(to_path_string("/dir/a.ts"))
+                                                .unwrap(),
                                             vec![lsp::TextEdit {
                                                 range: lsp::Range::new(
                                                     lsp::Position::new(0, 0),
@@ -3600,14 +3611,6 @@ async fn test_buffer_is_dirty(cx: &mut gpui::TestAppContext) {
 
 #[gpui::test]
 async fn test_buffer_file_changes_on_disk(cx: &mut gpui::TestAppContext) {
-    fn to_path_string(path: &str) -> String {
-        if cfg!(target_os = "windows") {
-            path.replace("/dir", "C:/dir")
-        } else {
-            path.to_string()
-        }
-    }
-
     init_test(cx);
 
     let initial_contents = "aaa\nbbbbb\nc\n";
