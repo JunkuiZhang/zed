@@ -3466,7 +3466,7 @@ async fn test_buffer_is_dirty(cx: &mut gpui::TestAppContext) {
 
     let fs = FakeFs::new(cx.executor());
     fs.insert_tree(
-        "/dir",
+        to_path_string("/dir"),
         json!({
             "file1": "abc",
             "file2": "def",
@@ -3475,10 +3475,12 @@ async fn test_buffer_is_dirty(cx: &mut gpui::TestAppContext) {
     )
     .await;
 
-    let project = Project::test(fs.clone(), ["/dir".as_ref()], cx).await;
+    let project = Project::test(fs.clone(), [to_path_string("/dir").as_ref()], cx).await;
 
     let buffer1 = project
-        .update(cx, |p, cx| p.open_local_buffer("/dir/file1", cx))
+        .update(cx, |p, cx| {
+            p.open_local_buffer(to_path_string("/dir/file1"), cx)
+        })
         .await
         .unwrap();
     let events = Arc::new(Mutex::new(Vec::new()));
@@ -3561,7 +3563,9 @@ async fn test_buffer_is_dirty(cx: &mut gpui::TestAppContext) {
     // When a file is deleted, the buffer is considered dirty.
     let events = Arc::new(Mutex::new(Vec::new()));
     let buffer2 = project
-        .update(cx, |p, cx| p.open_local_buffer("/dir/file2", cx))
+        .update(cx, |p, cx| {
+            p.open_local_buffer(to_path_string("/dir/file2"), cx)
+        })
         .await
         .unwrap();
     buffer2.update(cx, |_, cx| {
@@ -3572,7 +3576,7 @@ async fn test_buffer_is_dirty(cx: &mut gpui::TestAppContext) {
         .detach();
     });
 
-    fs.remove_file("/dir/file2".as_ref(), Default::default())
+    fs.remove_file(to_path_string("/dir/file2").as_ref(), Default::default())
         .await
         .unwrap();
     cx.executor().run_until_parked();
@@ -3588,7 +3592,9 @@ async fn test_buffer_is_dirty(cx: &mut gpui::TestAppContext) {
     // When a file is already dirty when deleted, we don't emit a Dirtied event.
     let events = Arc::new(Mutex::new(Vec::new()));
     let buffer3 = project
-        .update(cx, |p, cx| p.open_local_buffer("/dir/file3", cx))
+        .update(cx, |p, cx| {
+            p.open_local_buffer(to_path_string("/dir/file3"), cx)
+        })
         .await
         .unwrap();
     buffer3.update(cx, |_, cx| {
@@ -3603,7 +3609,7 @@ async fn test_buffer_is_dirty(cx: &mut gpui::TestAppContext) {
         buffer.edit([(0..0, "x")], None, cx);
     });
     events.lock().clear();
-    fs.remove_file("/dir/file3".as_ref(), Default::default())
+    fs.remove_file(to_path_string("/dir/file3").as_ref(), Default::default())
         .await
         .unwrap();
     cx.executor().run_until_parked();
