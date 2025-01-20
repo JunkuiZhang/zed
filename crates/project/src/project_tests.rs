@@ -4531,7 +4531,7 @@ async fn test_search_with_inclusions(cx: &mut gpui::TestAppContext) {
 
     let fs = FakeFs::new(cx.executor());
     fs.insert_tree(
-        "/dir",
+        add_root_for_windows("/dir"),
         json!({
             "one.rs": r#"// Rust file one"#,
             "one.ts": r#"// TypeScript file one"#,
@@ -4540,7 +4540,7 @@ async fn test_search_with_inclusions(cx: &mut gpui::TestAppContext) {
         }),
     )
     .await;
-    let project = Project::test(fs.clone(), ["/dir".as_ref()], cx).await;
+    let project = Project::test(fs.clone(), [add_root_for_windows("/dir").as_ref()], cx).await;
 
     assert!(
         search(
@@ -4581,8 +4581,8 @@ async fn test_search_with_inclusions(cx: &mut gpui::TestAppContext) {
         .await
         .unwrap(),
         HashMap::from_iter([
-            ("dir/one.rs".to_string(), vec![8..12]),
-            ("dir/two.rs".to_string(), vec![8..12]),
+            (to_path_string("dir/one.rs"), vec![8..12]),
+            (to_path_string("dir/two.rs"), vec![8..12]),
         ]),
         "Rust only search should give only Rust files"
     );
@@ -4606,8 +4606,8 @@ async fn test_search_with_inclusions(cx: &mut gpui::TestAppContext) {
         .await
         .unwrap(),
         HashMap::from_iter([
-            ("dir/one.ts".to_string(), vec![14..18]),
-            ("dir/two.ts".to_string(), vec![14..18]),
+            (to_path_string("dir/one.ts"), vec![14..18]),
+            (to_path_string("dir/two.ts"), vec![14..18]),
         ]),
         "TypeScript only search should give only TypeScript files, even if other inclusions don't match anything"
     );
@@ -4631,10 +4631,10 @@ async fn test_search_with_inclusions(cx: &mut gpui::TestAppContext) {
         .await
         .unwrap(),
         HashMap::from_iter([
-            ("dir/two.ts".to_string(), vec![14..18]),
-            ("dir/one.rs".to_string(), vec![8..12]),
-            ("dir/one.ts".to_string(), vec![14..18]),
-            ("dir/two.rs".to_string(), vec![8..12]),
+            (to_path_string("dir/two.ts"), vec![14..18]),
+            (to_path_string("dir/one.rs"), vec![8..12]),
+            (to_path_string("dir/one.ts"), vec![14..18]),
+            (to_path_string("dir/two.rs"), vec![8..12]),
         ]),
         "Rust and typescript search should give both Rust and TypeScript files, even if other inclusions don't match anything"
     );
