@@ -4976,11 +4976,19 @@ async fn test_search_multiple_worktrees_with_inclusions(cx: &mut gpui::TestAppCo
 
 #[gpui::test]
 async fn test_search_in_gitignored_dirs(cx: &mut gpui::TestAppContext) {
+    fn to_path_string(path: &str) -> String {
+        if cfg!(windows) {
+            path.replace("/", "\\")
+        } else {
+            path.to_string()
+        }
+    }
+
     init_test(cx);
 
     let fs = FakeFs::new(cx.background_executor.clone());
     fs.insert_tree(
-        "/dir",
+        add_root_for_windows("/dir"),
         json!({
             ".git": {},
             ".gitignore": "**/target\n/node_modules\n",
@@ -5001,7 +5009,7 @@ async fn test_search_in_gitignored_dirs(cx: &mut gpui::TestAppContext) {
         }),
     )
     .await;
-    let project = Project::test(fs.clone(), ["/dir".as_ref()], cx).await;
+    let project = Project::test(fs.clone(), [add_root_for_windows("/dir").as_ref()], cx).await;
 
     let query = "key";
     assert_eq!(
@@ -5021,11 +5029,11 @@ async fn test_search_in_gitignored_dirs(cx: &mut gpui::TestAppContext) {
         )
         .await
         .unwrap(),
-        HashMap::from_iter([("dir/package.json".to_string(), vec![8..11])]),
+        HashMap::from_iter([(to_path_string("dir/package.json"), vec![8..11])]),
         "Only one non-ignored file should have the query"
     );
 
-    let project = Project::test(fs.clone(), ["/dir".as_ref()], cx).await;
+    let project = Project::test(fs.clone(), [add_root_for_windows("/dir").as_ref()], cx).await;
     assert_eq!(
         search(
             &project,
@@ -5044,19 +5052,22 @@ async fn test_search_in_gitignored_dirs(cx: &mut gpui::TestAppContext) {
         .await
         .unwrap(),
         HashMap::from_iter([
-            ("dir/package.json".to_string(), vec![8..11]),
-            ("dir/target/index.txt".to_string(), vec![6..9]),
+            (to_path_string("dir/package.json"), vec![8..11]),
+            (to_path_string("dir/target/index.txt"), vec![6..9]),
             (
-                "dir/node_modules/prettier/package.json".to_string(),
+                to_path_string("dir/node_modules/prettier/package.json"),
                 vec![9..12]
             ),
             (
-                "dir/node_modules/prettier/index.ts".to_string(),
+                to_path_string("dir/node_modules/prettier/index.ts"),
                 vec![15..18]
             ),
-            ("dir/node_modules/eslint/index.ts".to_string(), vec![13..16]),
             (
-                "dir/node_modules/eslint/package.json".to_string(),
+                to_path_string("dir/node_modules/eslint/index.ts"),
+                vec![13..16]
+            ),
+            (
+                to_path_string("dir/node_modules/eslint/package.json"),
                 vec![8..11]
             ),
         ]),
@@ -5065,7 +5076,7 @@ async fn test_search_in_gitignored_dirs(cx: &mut gpui::TestAppContext) {
 
     let files_to_include = PathMatcher::new(&["node_modules/prettier/**".to_owned()]).unwrap();
     let files_to_exclude = PathMatcher::new(&["*.ts".to_owned()]).unwrap();
-    let project = Project::test(fs.clone(), ["/dir".as_ref()], cx).await;
+    let project = Project::test(fs.clone(), [add_root_for_windows("/dir").as_ref()], cx).await;
     assert_eq!(
         search(
             &project,
@@ -5084,7 +5095,7 @@ async fn test_search_in_gitignored_dirs(cx: &mut gpui::TestAppContext) {
         .await
         .unwrap(),
         HashMap::from_iter([(
-            "dir/node_modules/prettier/package.json".to_string(),
+            to_path_string("dir/node_modules/prettier/package.json"),
             vec![9..12]
         )]),
         "With search including ignored prettier directory and excluding TS files, only one file should be found"
