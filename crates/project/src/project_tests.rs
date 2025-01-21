@@ -25,21 +25,11 @@ use std::{mem, num::NonZeroU32, ops::Range, task::Poll};
 use task::{ResolvedTask, TaskContext};
 use unindent::Unindent as _;
 use util::{
-    
-    add_root_for_windows, assert_set_eq,
-    paths::{replace_path_separator, PathMatcher},
+    assert_set_eq,
+    paths::{add_root_for_windows, replace_path_separator, PathMatcher},
     test::temp_tree,
     TryFutureExt as _,
-,
 };
-
-fn to_path_string(path: &str) -> String {
-    if cfg!(windows) {
-        path.replace("/", "\\")
-    } else {
-        path.to_string()
-    }
-}
 
 #[gpui::test]
 async fn test_block_via_channel(cx: &mut gpui::TestAppContext) {
@@ -4595,8 +4585,8 @@ async fn test_search_with_inclusions(cx: &mut gpui::TestAppContext) {
         .await
         .unwrap(),
         HashMap::from_iter([
-            (to_path_string("dir/one.rs"), vec![8..12]),
-            (to_path_string("dir/two.rs"), vec![8..12]),
+            (replace_path_separator("dir/one.rs"), vec![8..12]),
+            (replace_path_separator("dir/two.rs"), vec![8..12]),
         ]),
         "Rust only search should give only Rust files"
     );
@@ -4620,8 +4610,8 @@ async fn test_search_with_inclusions(cx: &mut gpui::TestAppContext) {
         .await
         .unwrap(),
         HashMap::from_iter([
-            (to_path_string("dir/one.ts"), vec![14..18]),
-            (to_path_string("dir/two.ts"), vec![14..18]),
+            (replace_path_separator("dir/one.ts"), vec![14..18]),
+            (replace_path_separator("dir/two.ts"), vec![14..18]),
         ]),
         "TypeScript only search should give only TypeScript files, even if other inclusions don't match anything"
     );
@@ -4645,10 +4635,10 @@ async fn test_search_with_inclusions(cx: &mut gpui::TestAppContext) {
         .await
         .unwrap(),
         HashMap::from_iter([
-            (to_path_string("dir/two.ts"), vec![14..18]),
-            (to_path_string("dir/one.rs"), vec![8..12]),
-            (to_path_string("dir/one.ts"), vec![14..18]),
-            (to_path_string("dir/two.rs"), vec![8..12]),
+            (replace_path_separator("dir/two.ts"), vec![14..18]),
+            (replace_path_separator("dir/one.rs"), vec![8..12]),
+            (replace_path_separator("dir/one.ts"), vec![14..18]),
+            (replace_path_separator("dir/two.rs"), vec![8..12]),
         ]),
         "Rust and typescript search should give both Rust and TypeScript files, even if other inclusions don't match anything"
     );
@@ -4691,10 +4681,10 @@ async fn test_search_with_exclusions(cx: &mut gpui::TestAppContext) {
         .await
         .unwrap(),
         HashMap::from_iter([
-            (to_path_string("dir/one.rs"), vec![8..12]),
-            (to_path_string("dir/one.ts"), vec![14..18]),
-            (to_path_string("dir/two.rs"), vec![8..12]),
-            (to_path_string("dir/two.ts"), vec![14..18]),
+            (replace_path_separator("dir/one.rs"), vec![8..12]),
+            (replace_path_separator("dir/one.ts"), vec![14..18]),
+            (replace_path_separator("dir/two.rs"), vec![8..12]),
+            (replace_path_separator("dir/two.ts"), vec![14..18]),
         ]),
         "If no exclusions match, all files should be returned"
     );
@@ -4717,8 +4707,8 @@ async fn test_search_with_exclusions(cx: &mut gpui::TestAppContext) {
         .await
         .unwrap(),
         HashMap::from_iter([
-            (to_path_string("dir/one.ts"), vec![14..18]),
-            (to_path_string("dir/two.ts"), vec![14..18]),
+            (replace_path_separator("dir/one.ts"), vec![14..18]),
+            (replace_path_separator("dir/two.ts"), vec![14..18]),
         ]),
         "Rust exclusion search should give only TypeScript files"
     );
@@ -4740,8 +4730,8 @@ async fn test_search_with_exclusions(cx: &mut gpui::TestAppContext) {
         .await
         .unwrap(),
         HashMap::from_iter([
-            (to_path_string("dir/one.rs"), vec![8..12]),
-            (to_path_string("dir/two.rs"), vec![8..12]),
+            (replace_path_separator("dir/one.rs"), vec![8..12]),
+            (replace_path_separator("dir/two.rs"), vec![8..12]),
         ]),
         "TypeScript exclusion search should give only Rust files, even if other exclusions don't match anything"
     );
@@ -4867,8 +4857,8 @@ async fn test_search_with_exclusions_and_inclusions(cx: &mut gpui::TestAppContex
         .await
         .unwrap(),
         HashMap::from_iter([
-            (to_path_string("dir/one.ts"), vec![14..18]),
-            (to_path_string("dir/two.ts"), vec![14..18]),
+            (replace_path_separator("dir/one.ts"), vec![14..18]),
+            (replace_path_separator("dir/two.ts"), vec![14..18]),
         ]),
         "Non-intersecting TypeScript inclusions and Rust exclusions should return TypeScript files"
     );
@@ -5055,7 +5045,7 @@ async fn test_search_in_gitignored_dirs(cx: &mut gpui::TestAppContext) {
         )
         .await
         .unwrap(),
-        HashMap::from_iter([(to_path_string("dir/package.json"), vec![8..11])]),
+        HashMap::from_iter([(replace_path_separator("dir/package.json"), vec![8..11])]),
         "Only one non-ignored file should have the query"
     );
 
@@ -5078,22 +5068,22 @@ async fn test_search_in_gitignored_dirs(cx: &mut gpui::TestAppContext) {
         .await
         .unwrap(),
         HashMap::from_iter([
-            (to_path_string("dir/package.json"), vec![8..11]),
-            (to_path_string("dir/target/index.txt"), vec![6..9]),
+            (replace_path_separator("dir/package.json"), vec![8..11]),
+            (replace_path_separator("dir/target/index.txt"), vec![6..9]),
             (
-                to_path_string("dir/node_modules/prettier/package.json"),
+                replace_path_separator("dir/node_modules/prettier/package.json"),
                 vec![9..12]
             ),
             (
-                to_path_string("dir/node_modules/prettier/index.ts"),
+                replace_path_separator("dir/node_modules/prettier/index.ts"),
                 vec![15..18]
             ),
             (
-                to_path_string("dir/node_modules/eslint/index.ts"),
+                replace_path_separator("dir/node_modules/eslint/index.ts"),
                 vec![13..16]
             ),
             (
-                to_path_string("dir/node_modules/eslint/package.json"),
+                replace_path_separator("dir/node_modules/eslint/package.json"),
                 vec![8..11]
             ),
         ]),
@@ -5121,7 +5111,7 @@ async fn test_search_in_gitignored_dirs(cx: &mut gpui::TestAppContext) {
         .await
         .unwrap(),
         HashMap::from_iter([(
-            to_path_string("dir/node_modules/prettier/package.json"),
+            replace_path_separator("dir/node_modules/prettier/package.json"),
             vec![9..12]
         )]),
         "With search including ignored prettier directory and excluding TS files, only one file should be found"
