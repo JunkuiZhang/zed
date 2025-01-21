@@ -1062,3 +1062,18 @@ mod tests {
         })
     }
 }
+
+    fn task_names(
+        spawn_tasks: &View<Picker<TasksModalDelegate>>,
+        cx: &mut VisualTestContext,
+    ) -> Vec<String> {
+        spawn_tasks.update(cx, |spawn_tasks, _| {
+            spawn_tasks
+                .delegate
+                .matches
+                .iter()
+                .map(|hit| hit.string.clone())
+                .collect::<Vec<_>>()
+        })
+    }
+}
