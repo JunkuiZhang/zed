@@ -250,6 +250,7 @@ mod tests {
     use serde_json::json;
     use task::{TaskContext, TaskVariables, VariableName};
     use ui::VisualContext;
+    use util::paths::add_root_for_windows;
     use workspace::{AppState, Workspace};
 
     use crate::task_context;
@@ -259,7 +260,7 @@ mod tests {
         init_test(cx);
         let fs = FakeFs::new(cx.executor());
         fs.insert_tree(
-            "/dir",
+            add_root_for_windows("/dir"),
             json!({
                 ".zed": {
                     "tasks.json": r#"[
@@ -283,7 +284,7 @@ mod tests {
             }),
         )
         .await;
-        let project = Project::test(fs, ["/dir".as_ref()], cx).await;
+        let project = Project::test(fs, [add_root_for_windows("/dir").as_ref()], cx).await;
         let worktree_store = project.update(cx, |project, _| project.worktree_store().clone());
         let rust_language = Arc::new(
             Language::new(
@@ -359,6 +360,8 @@ mod tests {
                 task_context(workspace, cx)
             })
             .await;
+
+        #[cfg(not(target_os = "windows"))]
         assert_eq!(
             first_context,
             TaskContext {
@@ -376,12 +379,33 @@ mod tests {
                 project_env: HashMap::default(),
             }
         );
+        // TODO:
+        // Can we change VariableName::File to VariableName::File(PathBuf)?
+        #[cfg(target_os = "windows")]
+        assert_eq!(
+            first_context,
+            TaskContext {
+                cwd: Some("C:/dir".into()),
+                task_variables: TaskVariables::from_iter([
+                    (VariableName::File, "C:/dir\\rust/b.rs".into()),
+                    (VariableName::Filename, "b.rs".into()),
+                    (VariableName::RelativeFile, "rust\\b.rs".into()),
+                    (VariableName::Dirname, "C:/dir\\rust".into()),
+                    (VariableName::Stem, "b".into()),
+                    (VariableName::WorktreeRoot, "C:/dir".into()),
+                    (VariableName::Row, "1".into()),
+                    (VariableName::Column, "1".into()),
+                ]),
+                project_env: HashMap::default(),
+            }
+        );
 
         // And now, let's select an identifier.
         editor2.update(cx, |editor, cx| {
             editor.change_selections(None, cx, |selections| selections.select_ranges([14..18]))
         });
 
+        #[cfg(not(target_os = "windows"))]
         assert_eq!(
             workspace
                 .update(cx, |workspace, cx| { task_context(workspace, cx) })
@@ -403,7 +427,30 @@ mod tests {
                 project_env: HashMap::default(),
             }
         );
+        #[cfg(target_os = "windows")]
+        assert_eq!(
+            workspace
+                .update(cx, |workspace, cx| { task_context(workspace, cx) })
+                .await,
+            TaskContext {
+                cwd: Some("C:/dir".into()),
+                task_variables: TaskVariables::from_iter([
+                    (VariableName::File, "C:/dir\\rust/b.rs".into()),
+                    (VariableName::Filename, "b.rs".into()),
+                    (VariableName::RelativeFile, "rust\\b.rs".into()),
+                    (VariableName::Dirname, "C:/dir\\rust".into()),
+                    (VariableName::Stem, "b".into()),
+                    (VariableName::WorktreeRoot, "C:/dir".into()),
+                    (VariableName::Row, "1".into()),
+                    (VariableName::Column, "15".into()),
+                    (VariableName::SelectedText, "is_i".into()),
+                    (VariableName::Symbol, "this_is_a_rust_file".into()),
+                ]),
+                project_env: HashMap::default(),
+            }
+        );
 
+        #[cfg(not(target_os = "windows"))]
         assert_eq!(
             workspace
                 .update(cx, |workspace, cx| {
@@ -421,6 +468,31 @@ mod tests {
                     (VariableName::Dirname, "/dir".into()),
                     (VariableName::Stem, "a".into()),
                     (VariableName::WorktreeRoot, "/dir".into()),
+                    (VariableName::Row, "1".into()),
+                    (VariableName::Column, "1".into()),
+                    (VariableName::Symbol, "this_is_a_test".into()),
+                ]),
+                project_env: HashMap::default(),
+            }
+        );
+        #[cfg(target_os = "windows")]
+        assert_eq!(
+            workspace
+                .update(cx, |workspace, cx| {
+                    // Now, let's switch the active item to .ts file.
+                    workspace.activate_item(&editor1, true, true, cx);
+                    task_context(workspace, cx)
+                })
+                .await,
+            TaskContext {
+                cwd: Some("C:/dir".into()),
+                task_variables: TaskVariables::from_iter([
+                    (VariableName::File, "C:/dir\\a.ts".into()),
+                    (VariableName::Filename, "a.ts".into()),
+                    (VariableName::RelativeFile, "a.ts".into()),
+                    (VariableName::Dirname, "C:/dir".into()),
+                    (VariableName::Stem, "a".into()),
+                    (VariableName::WorktreeRoot, "C:/dir".into()),
                     (VariableName::Row, "1".into()),
                     (VariableName::Column, "1".into()),
                     (VariableName::Symbol, "this_is_a_test".into()),
