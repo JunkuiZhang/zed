@@ -1509,10 +1509,15 @@ pub mod tests {
             }
         });
 
+        let font = if cfg!(windows) {
+            font("Courier New")
+        } else {
+            font("Helvetica")
+        };
         let map = cx.new_model(|cx| {
             DisplayMap::new(
                 buffer.clone(),
-                font("Helvetica"),
+                font,
                 font_size,
                 wrap_width,
                 true,
