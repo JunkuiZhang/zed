@@ -1768,12 +1768,12 @@ mod tests {
         app_state
             .fs
             .as_fake()
-            .insert_tree("/root", json!({"a": "hey"}))
+            .insert_tree(add_root_for_windows("/root"), json!({"a": "hey"}))
             .await;
 
         cx.update(|cx| {
             open_paths(
-                &[PathBuf::from("/root/a")],
+                &[PathBuf::from(add_root_for_windows("/root/a"))],
                 app_state.clone(),
                 workspace::OpenOptions::default(),
                 cx,
@@ -1850,7 +1850,7 @@ mod tests {
         // Opening the buffer again doesn't impact the window's edited state.
         cx.update(|cx| {
             open_paths(
-                &[PathBuf::from("/root/a")],
+                &[PathBuf::from(add_root_for_windows("/root/a"))],
                 app_state,
                 workspace::OpenOptions::default(),
                 cx,
