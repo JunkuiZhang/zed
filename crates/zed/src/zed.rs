@@ -2189,7 +2189,7 @@ mod tests {
             .fs
             .as_fake()
             .insert_tree(
-                "/",
+                add_root_for_windows("/"),
                 json!({
                     "dir1": {
                         "a.txt": ""
@@ -2207,7 +2207,7 @@ mod tests {
 
         cx.update(|cx| {
             open_paths(
-                &[PathBuf::from("/dir1/")],
+                &[PathBuf::from(add_root_for_windows("/dir1/"))],
                 app_state,
                 workspace::OpenOptions::default(),
                 cx,
@@ -2253,13 +2253,23 @@ mod tests {
         // Open a file within an existing worktree.
         window
             .update(cx, |view, cx| {
-                view.open_paths(vec!["/dir1/a.txt".into()], OpenVisible::All, None, cx)
+                view.open_paths(
+                    vec![add_root_for_windows("/dir1/a.txt").into()],
+                    OpenVisible::All,
+                    None,
+                    cx,
+                )
             })
             .unwrap()
             .await;
         cx.read(|cx| {
             let workspace = workspace.read(cx);
-            assert_project_panel_selection(workspace, Path::new("/dir1"), Path::new("a.txt"), cx);
+            assert_project_panel_selection(
+                workspace,
+                Path::new(&add_root_for_windows("/dir1")),
+                Path::new("a.txt"),
+                cx,
+            );
             assert_eq!(
                 workspace
                     .active_pane()
@@ -2277,23 +2287,36 @@ mod tests {
         // Open a file outside of any existing worktree.
         window
             .update(cx, |view, cx| {
-                view.open_paths(vec!["/dir2/b.txt".into()], OpenVisible::All, None, cx)
+                view.open_paths(
+                    vec![add_root_for_windows("/dir2/b.txt").into()],
+                    OpenVisible::All,
+                    None,
+                    cx,
+                )
             })
             .unwrap()
             .await;
         cx.read(|cx| {
             let workspace = workspace.read(cx);
-            assert_project_panel_selection(workspace, Path::new("/dir2/b.txt"), Path::new(""), cx);
+            assert_project_panel_selection(
+                workspace,
+                Path::new(&add_root_for_windows("/dir2/b.txt")),
+                Path::new(""),
+                cx,
+            );
             let worktree_roots = workspace
                 .worktrees(cx)
                 .map(|w| w.read(cx).as_local().unwrap().abs_path().as_ref())
                 .collect::<HashSet<_>>();
             assert_eq!(
                 worktree_roots,
-                vec!["/dir1", "/dir2/b.txt"]
-                    .into_iter()
-                    .map(Path::new)
-                    .collect(),
+                vec![
+                    &add_root_for_windows("/dir1"),
+                    &add_root_for_windows("/dir2/b.txt")
+                ]
+                .into_iter()
+                .map(Path::new)
+                .collect(),
             );
             assert_eq!(
                 workspace
@@ -2313,7 +2336,10 @@ mod tests {
         window
             .update(cx, |view, cx| {
                 view.open_paths(
-                    vec!["/dir3".into(), "/dir3/c.txt".into()],
+                    vec![
+                        add_root_for_windows("/dir3").into(),
+                        add_root_for_windows("/dir3/c.txt").into(),
+                    ],
                     OpenVisible::All,
                     None,
                     cx,
@@ -2323,17 +2349,26 @@ mod tests {
             .await;
         cx.read(|cx| {
             let workspace = workspace.read(cx);
-            assert_project_panel_selection(workspace, Path::new("/dir3"), Path::new("c.txt"), cx);
+            assert_project_panel_selection(
+                workspace,
+                Path::new(&add_root_for_windows("/dir3")),
+                Path::new("c.txt"),
+                cx,
+            );
             let worktree_roots = workspace
                 .worktrees(cx)
                 .map(|w| w.read(cx).as_local().unwrap().abs_path().as_ref())
                 .collect::<HashSet<_>>();
             assert_eq!(
                 worktree_roots,
-                vec!["/dir1", "/dir2/b.txt", "/dir3"]
-                    .into_iter()
-                    .map(Path::new)
-                    .collect(),
+                vec![
+                    &add_root_for_windows("/dir1"),
+                    &add_root_for_windows("/dir2/b.txt"),
+                    &add_root_for_windows("/dir3")
+                ]
+                .into_iter()
+                .map(Path::new)
+                .collect(),
             );
             assert_eq!(
                 workspace
@@ -2352,23 +2387,38 @@ mod tests {
         // Ensure opening invisibly a file outside an existing worktree adds a new, invisible worktree.
         window
             .update(cx, |view, cx| {
-                view.open_paths(vec!["/d.txt".into()], OpenVisible::None, None, cx)
+                view.open_paths(
+                    vec![add_root_for_windows("/d.txt").into()],
+                    OpenVisible::None,
+                    None,
+                    cx,
+                )
             })
             .unwrap()
             .await;
         cx.read(|cx| {
             let workspace = workspace.read(cx);
-            assert_project_panel_selection(workspace, Path::new("/d.txt"), Path::new(""), cx);
+            assert_project_panel_selection(
+                workspace,
+                Path::new(&add_root_for_windows("/d.txt")),
+                Path::new(""),
+                cx,
+            );
             let worktree_roots = workspace
                 .worktrees(cx)
                 .map(|w| w.read(cx).as_local().unwrap().abs_path().as_ref())
                 .collect::<HashSet<_>>();
             assert_eq!(
                 worktree_roots,
-                vec!["/dir1", "/dir2/b.txt", "/dir3", "/d.txt"]
-                    .into_iter()
-                    .map(Path::new)
-                    .collect(),
+                vec![
+                    &add_root_for_windows("/dir1"),
+                    &add_root_for_windows("/dir2/b.txt"),
+                    &add_root_for_windows("/dir3"),
+                    &add_root_for_windows("/d.txt")
+                ]
+                .into_iter()
+                .map(Path::new)
+                .collect(),
             );
 
             let visible_worktree_roots = workspace
@@ -2377,10 +2427,14 @@ mod tests {
                 .collect::<HashSet<_>>();
             assert_eq!(
                 visible_worktree_roots,
-                vec!["/dir1", "/dir2/b.txt", "/dir3"]
-                    .into_iter()
-                    .map(Path::new)
-                    .collect(),
+                vec![
+                    &add_root_for_windows("/dir1"),
+                    &add_root_for_windows("/dir2/b.txt"),
+                    &add_root_for_windows("/dir3")
+                ]
+                .into_iter()
+                .map(Path::new)
+                .collect(),
             );
 
             assert_eq!(
