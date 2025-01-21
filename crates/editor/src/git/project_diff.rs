@@ -1104,7 +1104,7 @@ mod tests {
         ops::Deref as _,
         path::{Path, PathBuf},
     };
-    use util::add_root_for_windows;
+    use util::paths::add_root_for_windows;
 
     use super::*;
 

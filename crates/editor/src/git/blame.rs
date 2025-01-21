@@ -561,7 +561,7 @@ mod tests {
     use settings::SettingsStore;
     use std::{cmp, env, ops::Range, path::Path};
     use unindent::Unindent as _;
-    use util::{add_root_for_windows, RandomCharIter};
+    use util::{paths::add_root_for_windows, RandomCharIter};
 
     macro_rules! assert_blame_rows {
         ($blame:expr, $rows:expr, $expected:expr, $cx:expr) => {
@@ -734,8 +734,6 @@ mod tests {
 
     #[gpui::test]
     async fn test_blame_for_rows_with_edits(cx: &mut gpui::TestAppContext) {
-        use util::add_root_for_windows;
-
         init_test(cx);
 
         let fs = FakeFs::new(cx.executor());
