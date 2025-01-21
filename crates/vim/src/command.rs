@@ -1427,6 +1427,7 @@ mod test {
     use gpui::TestAppContext;
     use indoc::indoc;
     use ui::ViewContext;
+    use util::paths::add_root_for_windows;
     use workspace::Workspace;
 
     #[gpui::test]
@@ -1636,7 +1637,7 @@ mod test {
         let file_path = file.as_local().unwrap().abs_path(cx);
 
         assert_eq!(text, expected_text);
-        assert_eq!(file_path.to_str().unwrap(), expected_path);
+        assert_eq!(file_path, Path::new(expected_path));
     }
 
     #[gpui::test]
@@ -1645,16 +1646,27 @@ mod test {
 
         // Assert base state, that we're in /root/dir/file.rs
         cx.workspace(|workspace, cx| {
-            assert_active_item(workspace, "/root/dir/file.rs", "", cx);
+            assert_active_item(
+                workspace,
+                &add_root_for_windows("/root/dir/file.rs"),
+                "",
+                cx,
+            );
         });
 
         // Insert a new file
         let fs = cx.workspace(|workspace, cx| workspace.project().read(cx).fs().clone());
         fs.as_fake()
-            .insert_file("/root/dir/file2.rs", "This is file2.rs".as_bytes().to_vec())
+            .insert_file(
+                add_root_for_windows("/root/dir/file2.rs"),
+                "This is file2.rs".as_bytes().to_vec(),
+            )
             .await;
         fs.as_fake()
-            .insert_file("/root/dir/file3.rs", "go to file3".as_bytes().to_vec())
+            .insert_file(
+                add_root_for_windows("/root/dir/file3.rs"),
+                "go to file3".as_bytes().to_vec(),
+            )
             .await;
 
         // Put the path to the second file into the currently open buffer
@@ -1666,7 +1678,12 @@ mod test {
         // We now have two items
         cx.workspace(|workspace, cx| assert_eq!(workspace.items(cx).count(), 2));
         cx.workspace(|workspace, cx| {
-            assert_active_item(workspace, "/root/dir/file2.rs", "This is file2.rs", cx);
+            assert_active_item(
+                workspace,
+                &add_root_for_windows("/root/dir/file2.rs"),
+                "This is file2.rs",
+                cx,
+            );
         });
 
         // Update editor to point to `file2.rs`
@@ -1682,7 +1699,12 @@ mod test {
         // We now have three items
         cx.workspace(|workspace, cx| assert_eq!(workspace.items(cx).count(), 3));
         cx.workspace(|workspace, cx| {
-            assert_active_item(workspace, "/root/dir/file3.rs", "go to file3", cx);
+            assert_active_item(
+                workspace,
+                &add_root_for_windows("/root/dir/file3.rs"),
+                "go to file3",
+                cx,
+            );
         });
     }
 
