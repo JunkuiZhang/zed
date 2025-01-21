@@ -580,7 +580,7 @@ mod tests {
         init_test(cx);
         let fs = FakeFs::new(cx.executor());
         fs.insert_tree(
-            "/dir",
+            add_root_for_windows("/dir"),
             json!({
                 ".zed": {
                     "tasks.json": r#"[
@@ -601,7 +601,7 @@ mod tests {
         )
         .await;
 
-        let project = Project::test(fs, ["/dir".as_ref()], cx).await;
+        let project = Project::test(fs, [add_root_for_windows("/dir").as_ref()], cx).await;
         let (workspace, cx) = cx.add_window_view(|cx| Workspace::test_new(project, cx));
 
         let tasks_picker = open_spawn_tasks(&workspace, cx);
@@ -619,7 +619,7 @@ mod tests {
 
         let _ = workspace
             .update(cx, |workspace, cx| {
-                workspace.open_abs_path(PathBuf::from("/dir/a.ts"), true, cx)
+                workspace.open_abs_path(PathBuf::from(add_root_for_windows("/dir/a.ts")), true, cx)
             })
             .await
             .unwrap();
