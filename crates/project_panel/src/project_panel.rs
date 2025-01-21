@@ -6077,7 +6077,7 @@ mod tests {
 
         let fs = FakeFs::new(cx.executor().clone());
         fs.insert_tree(
-            "/src",
+            add_root_for_windows("/src"),
             json!({
                 "test": {
                     "first.rs": "// First Rust file",
@@ -6088,7 +6088,7 @@ mod tests {
         )
         .await;
 
-        let project = Project::test(fs.clone(), ["/src".as_ref()], cx).await;
+        let project = Project::test(fs.clone(), [add_root_for_windows("/src").as_ref()], cx).await;
         let workspace = cx.add_window(|cx| Workspace::test_new(project.clone(), cx));
         let cx = &mut VisualTestContext::from_window(*workspace, cx);
         let panel = workspace.update(cx, ProjectPanel::new).unwrap();
