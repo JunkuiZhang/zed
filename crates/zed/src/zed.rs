@@ -1690,12 +1690,15 @@ mod tests {
         app_state
             .fs
             .as_fake()
-            .insert_tree("/root", json!({"dir1": {"a": "b"}, "dir2": {"c": "d"}}))
+            .insert_tree(
+                add_root_for_windows("/root"),
+                json!({"dir1": {"a": "b"}, "dir2": {"c": "d"}}),
+            )
             .await;
 
         cx.update(|cx| {
             open_paths(
-                &[PathBuf::from("/root/dir1/a")],
+                &[PathBuf::from(add_root_for_windows("/root/dir1/a"))],
                 app_state.clone(),
                 workspace::OpenOptions::default(),
                 cx,
@@ -1708,7 +1711,7 @@ mod tests {
 
         cx.update(|cx| {
             open_paths(
-                &[PathBuf::from("/root/dir2/c")],
+                &[PathBuf::from(add_root_for_windows("/root/dir2/c"))],
                 app_state.clone(),
                 workspace::OpenOptions::default(),
                 cx,
@@ -1720,7 +1723,7 @@ mod tests {
 
         cx.update(|cx| {
             open_paths(
-                &[PathBuf::from("/root/dir2")],
+                &[PathBuf::from(add_root_for_windows("/root/dir2"))],
                 app_state.clone(),
                 workspace::OpenOptions::default(),
                 cx,
@@ -1736,7 +1739,7 @@ mod tests {
 
         cx.update(|cx| {
             open_paths(
-                &[PathBuf::from("/root/dir2/c")],
+                &[PathBuf::from(add_root_for_windows("/root/dir2/c"))],
                 app_state.clone(),
                 workspace::OpenOptions::default(),
                 cx,
