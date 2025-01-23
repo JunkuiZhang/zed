@@ -280,7 +280,7 @@ mod tests {
     use settings::SettingsStore;
     use smol::channel;
     use std::{future, path::Path, sync::Arc};
-    use util::paths::replace_path_separator;
+    use util::{path, replace_path_slashes};
 
     fn init_test(cx: &mut TestAppContext) {
         env_logger::try_init().ok();
@@ -425,7 +425,7 @@ mod tests {
 
         assert_eq!(
             search_result.path.to_string_lossy(),
-            replace_path_separator("fixture/needle.md")
+            path!("fixture/needle.md", 0)
         );
 
         let content = cx
