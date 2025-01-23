@@ -4424,7 +4424,7 @@ mod tests {
     use serde_json::json;
     use settings::SettingsStore;
     use std::path::{Path, PathBuf};
-    use util::{path, paths::add_root_for_windows, separator};
+    use util::{path, separator};
     use workspace::{
         item::{Item, ProjectItem},
         register_project_item, AppState,
@@ -4525,7 +4525,7 @@ mod tests {
 
         let fs = FakeFs::new(cx.executor().clone());
         fs.insert_tree(
-            add_root_for_windows("/src"),
+            path!("/src"),
             json!({
                 "test": {
                     "first.rs": "// First Rust file",
@@ -4536,7 +4536,7 @@ mod tests {
         )
         .await;
 
-        let project = Project::test(fs.clone(), [add_root_for_windows("/src").as_ref()], cx).await;
+        let project = Project::test(fs.clone(), [path!("/src").as_ref()], cx).await;
         let workspace = cx.add_window(|cx| Workspace::test_new(project.clone(), cx));
         let cx = &mut VisualTestContext::from_window(*workspace, cx);
         let panel = workspace.update(cx, ProjectPanel::new).unwrap();
@@ -4695,7 +4695,7 @@ mod tests {
 
         let fs = FakeFs::new(cx.executor().clone());
         fs.insert_tree(
-            add_root_for_windows("/root1"),
+            path!("/root1"),
             json!({
                 "dir_1": {
                     "nested_dir_1": {
@@ -4717,7 +4717,7 @@ mod tests {
         )
         .await;
         fs.insert_tree(
-            add_root_for_windows("/root2"),
+            path!("/root2"),
             json!({
                 "dir_2": {
                     "file_1.java": "// File contents",
@@ -4728,10 +4728,7 @@ mod tests {
 
         let project = Project::test(
             fs.clone(),
-            [
-                add_root_for_windows("/root1").as_ref(),
-                add_root_for_windows("/root2").as_ref(),
-            ],
+            [path!("/root1").as_ref(), path!("/root2").as_ref()],
             cx,
         )
         .await;
@@ -5310,7 +5307,7 @@ mod tests {
 
         let fs = FakeFs::new(cx.executor().clone());
         fs.insert_tree(
-            add_root_for_windows("/root1"),
+            path!("/root1"),
             json!({
                 ".dockerignore": "",
                 ".git": {
@@ -5320,8 +5317,7 @@ mod tests {
         )
         .await;
 
-        let project =
-            Project::test(fs.clone(), [add_root_for_windows("/root1").as_ref()], cx).await;
+        let project = Project::test(fs.clone(), [path!("/root1").as_ref()], cx).await;
         let workspace = cx.add_window(|cx| Workspace::test_new(project.clone(), cx));
         let cx = &mut VisualTestContext::from_window(*workspace, cx);
         let panel = workspace
@@ -6075,7 +6071,7 @@ mod tests {
 
         let fs = FakeFs::new(cx.executor().clone());
         fs.insert_tree(
-            add_root_for_windows("/src"),
+            path!("/src"),
             json!({
                 "test": {
                     "first.rs": "// First Rust file",
@@ -6086,7 +6082,7 @@ mod tests {
         )
         .await;
 
-        let project = Project::test(fs.clone(), [add_root_for_windows("/src").as_ref()], cx).await;
+        let project = Project::test(fs.clone(), [path!("/src").as_ref()], cx).await;
         let workspace = cx.add_window(|cx| Workspace::test_new(project.clone(), cx));
         let cx = &mut VisualTestContext::from_window(*workspace, cx);
         let panel = workspace.update(cx, ProjectPanel::new).unwrap();

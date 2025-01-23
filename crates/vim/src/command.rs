@@ -1427,7 +1427,7 @@ mod test {
     use gpui::TestAppContext;
     use indoc::indoc;
     use ui::ViewContext;
-    use util::paths::add_root_for_windows;
+    use util::path;
     use workspace::Workspace;
 
     #[gpui::test]
@@ -1524,7 +1524,7 @@ mod test {
     #[gpui::test]
     async fn test_command_write(cx: &mut TestAppContext) {
         let mut cx = VimTestContext::new(cx, true).await;
-        let path = PathBuf::from(add_root_for_windows("/root/dir/file.rs"));
+        let path = PathBuf::from(path!("/root/dir/file.rs"));
         let fs = cx.workspace(|workspace, cx| workspace.project().read(cx).fs().clone());
 
         cx.simulate_keystrokes("i @ escape");
@@ -1649,25 +1649,20 @@ mod test {
 
         // Assert base state, that we're in /root/dir/file.rs
         cx.workspace(|workspace, cx| {
-            assert_active_item(
-                workspace,
-                &add_root_for_windows("/root/dir/file.rs"),
-                "",
-                cx,
-            );
+            assert_active_item(workspace, &path!("/root/dir/file.rs"), "", cx);
         });
 
         // Insert a new file
         let fs = cx.workspace(|workspace, cx| workspace.project().read(cx).fs().clone());
         fs.as_fake()
             .insert_file(
-                add_root_for_windows("/root/dir/file2.rs"),
+                path!("/root/dir/file2.rs"),
                 "This is file2.rs".as_bytes().to_vec(),
             )
             .await;
         fs.as_fake()
             .insert_file(
-                add_root_for_windows("/root/dir/file3.rs"),
+                path!("/root/dir/file3.rs"),
                 "go to file3".as_bytes().to_vec(),
             )
             .await;
@@ -1683,7 +1678,7 @@ mod test {
         cx.workspace(|workspace, cx| {
             assert_active_item(
                 workspace,
-                &add_root_for_windows("/root/dir/file2.rs"),
+                &path!("/root/dir/file2.rs"),
                 "This is file2.rs",
                 cx,
             );
@@ -1702,12 +1697,7 @@ mod test {
         // We now have three items
         cx.workspace(|workspace, cx| assert_eq!(workspace.items(cx).count(), 3));
         cx.workspace(|workspace, cx| {
-            assert_active_item(
-                workspace,
-                &add_root_for_windows("/root/dir/file3.rs"),
-                "go to file3",
-                cx,
-            );
+            assert_active_item(workspace, &path!("/root/dir/file3.rs"), "go to file3", cx);
         });
     }
 

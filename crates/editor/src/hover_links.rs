@@ -905,7 +905,7 @@ mod tests {
     use indoc::indoc;
     use language::language_settings::InlayHintSettings;
     use lsp::request::{GotoDefinition, GotoTypeDefinition};
-    use util::{assert_set_eq, paths::add_root_for_windows};
+    use util::{assert_set_eq, path};
     use workspace::item::Item;
 
     #[gpui::test]
@@ -1559,7 +1559,7 @@ mod tests {
         let fs = cx.update_workspace(|workspace, cx| workspace.project().read(cx).fs().clone());
         fs.as_fake()
             .insert_file(
-                add_root_for_windows("/root/dir/file2.rs"),
+                path!("/root/dir/file2.rs"),
                 "This is file2.rs".as_bytes().to_vec(),
             )
             .await;
@@ -1772,7 +1772,7 @@ mod tests {
 
             assert_eq!(
                 file_path,
-                std::path::PathBuf::from(add_root_for_windows("/root/dir/file2.rs"))
+                std::path::PathBuf::from(path!("/root/dir/file2.rs"))
             );
         });
     }

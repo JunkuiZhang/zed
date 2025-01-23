@@ -569,7 +569,7 @@ mod tests {
     use project::{ContextProviderWithTasks, FakeFs, Project};
     use serde_json::json;
     use task::TaskTemplates;
-    use util::{path, paths::add_root_for_windows, separator};
+    use util::{path, separator};
     use workspace::CloseInactiveTabsAndPanes;
 
     use crate::{modal::Spawn, tests::init_test};
@@ -581,7 +581,7 @@ mod tests {
         init_test(cx);
         let fs = FakeFs::new(cx.executor());
         fs.insert_tree(
-            add_root_for_windows("/dir"),
+            path!("/dir"),
             json!({
                 ".zed": {
                     "tasks.json": r#"[
@@ -602,7 +602,7 @@ mod tests {
         )
         .await;
 
-        let project = Project::test(fs, [add_root_for_windows("/dir").as_ref()], cx).await;
+        let project = Project::test(fs, [path!("/dir").as_ref()], cx).await;
         let (workspace, cx) = cx.add_window_view(|cx| Workspace::test_new(project, cx));
 
         let tasks_picker = open_spawn_tasks(&workspace, cx);
@@ -620,7 +620,7 @@ mod tests {
 
         let _ = workspace
             .update(cx, |workspace, cx| {
-                workspace.open_abs_path(PathBuf::from(add_root_for_windows("/dir/a.ts")), true, cx)
+                workspace.open_abs_path(PathBuf::from(path!("/dir/a.ts")), true, cx)
             })
             .await
             .unwrap();
@@ -744,7 +744,7 @@ mod tests {
         init_test(cx);
         let fs = FakeFs::new(cx.executor());
         fs.insert_tree(
-            "/dir",
+            path!("/dir"),
             json!({
                 ".zed": {
                     "tasks.json": r#"[
@@ -766,7 +766,7 @@ mod tests {
         )
         .await;
 
-        let project = Project::test(fs, ["/dir".as_ref()], cx).await;
+        let project = Project::test(fs, [path!("/dir").as_ref()], cx).await;
         let (workspace, cx) = cx.add_window_view(|cx| Workspace::test_new(project.clone(), cx));
 
         let tasks_picker = open_spawn_tasks(&workspace, cx);
@@ -783,7 +783,11 @@ mod tests {
 
         let _ = workspace
             .update(cx, |workspace, cx| {
-                workspace.open_abs_path(PathBuf::from("/dir/file_with.odd_extension"), true, cx)
+                workspace.open_abs_path(
+                    PathBuf::from(path!("/dir/file_with.odd_extension")),
+                    true,
+                    cx,
+                )
             })
             .await
             .unwrap();
@@ -805,7 +809,11 @@ mod tests {
 
         let second_item = workspace
             .update(cx, |workspace, cx| {
-                workspace.open_abs_path(PathBuf::from("/dir/file_without_extension"), true, cx)
+                workspace.open_abs_path(
+                    PathBuf::from(path!("/dir/file_without_extension")),
+                    true,
+                    cx,
+                )
             })
             .await
             .unwrap();
@@ -838,7 +846,7 @@ mod tests {
         init_test(cx);
         let fs = FakeFs::new(cx.executor());
         fs.insert_tree(
-            add_root_for_windows("/dir"),
+            path!("/dir"),
             json!({
                 "a1.ts": "// a1",
                 "a2.ts": "// a2",
@@ -847,7 +855,7 @@ mod tests {
         )
         .await;
 
-        let project = Project::test(fs, [add_root_for_windows("/dir").as_ref()], cx).await;
+        let project = Project::test(fs, [path!("/dir").as_ref()], cx).await;
         project.read_with(cx, |project, _| {
             let language_registry = project.languages();
             language_registry.add(Arc::new(
@@ -907,7 +915,7 @@ mod tests {
 
         let _ts_file_1 = workspace
             .update(cx, |workspace, cx| {
-                workspace.open_abs_path(PathBuf::from(add_root_for_windows("/dir/a1.ts")), true, cx)
+                workspace.open_abs_path(PathBuf::from(path!("/dir/a1.ts")), true, cx)
             })
             .await
             .unwrap();
@@ -948,7 +956,7 @@ mod tests {
 
         let _ts_file_2 = workspace
             .update(cx, |workspace, cx| {
-                workspace.open_abs_path(PathBuf::from(add_root_for_windows("/dir/a2.ts")), true, cx)
+                workspace.open_abs_path(PathBuf::from(path!("/dir/a2.ts")), true, cx)
             })
             .await
             .unwrap();
@@ -986,7 +994,7 @@ mod tests {
         emulate_task_schedule(tasks_picker, &project, "Rust task", cx);
         let _ts_file_2 = workspace
             .update(cx, |workspace, cx| {
-                workspace.open_abs_path(PathBuf::from(add_root_for_windows("/dir/a2.ts")), true, cx)
+                workspace.open_abs_path(PathBuf::from(path!("/dir/a2.ts")), true, cx)
             })
             .await
             .unwrap();

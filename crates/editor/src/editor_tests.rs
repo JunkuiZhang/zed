@@ -40,8 +40,7 @@ use std::{
 use test::{build_editor_with_project, editor_lsp_test_context::rust_lang};
 use unindent::Unindent;
 use util::{
-    assert_set_eq,
-    paths::add_root_for_windows,
+    assert_set_eq, path,
     test::{marked_text_ranges, marked_text_ranges_by, sample_text, TextRangeMarker},
 };
 use workspace::{
@@ -6838,10 +6837,9 @@ async fn test_document_format_during_save(cx: &mut gpui::TestAppContext) {
     init_test(cx, |_| {});
 
     let fs = FakeFs::new(cx.executor());
-    fs.insert_file(add_root_for_windows("/file.rs"), Default::default())
-        .await;
+    fs.insert_file(path!("/file.rs"), Default::default()).await;
 
-    let project = Project::test(fs, [add_root_for_windows("/file.rs").as_ref()], cx).await;
+    let project = Project::test(fs, [path!("/file.rs").as_ref()], cx).await;
 
     let language_registry = project.read_with(cx, |project, _| project.languages().clone());
     language_registry.add(rust_lang());
@@ -6858,7 +6856,7 @@ async fn test_document_format_during_save(cx: &mut gpui::TestAppContext) {
 
     let buffer = project
         .update(cx, |project, cx| {
-            project.open_local_buffer(add_root_for_windows("/file.rs"), cx)
+            project.open_local_buffer(path!("/file.rs"), cx)
         })
         .await
         .unwrap();
@@ -6879,7 +6877,7 @@ async fn test_document_format_during_save(cx: &mut gpui::TestAppContext) {
         .handle_request::<lsp::request::Formatting, _, _>(move |params, _| async move {
             assert_eq!(
                 params.text_document.uri,
-                lsp::Url::from_file_path(add_root_for_windows("/file.rs")).unwrap()
+                lsp::Url::from_file_path(path!("/file.rs")).unwrap()
             );
             assert_eq!(params.options.tab_size, 4);
             Ok(Some(vec![lsp::TextEdit::new(
@@ -6905,7 +6903,7 @@ async fn test_document_format_during_save(cx: &mut gpui::TestAppContext) {
     fake_server.handle_request::<lsp::request::Formatting, _, _>(move |params, _| async move {
         assert_eq!(
             params.text_document.uri,
-            lsp::Url::from_file_path(add_root_for_windows("/file.rs")).unwrap()
+            lsp::Url::from_file_path(path!("/file.rs")).unwrap()
         );
         futures::future::pending::<()>().await;
         unreachable!()
@@ -6954,7 +6952,7 @@ async fn test_document_format_during_save(cx: &mut gpui::TestAppContext) {
         .handle_request::<lsp::request::Formatting, _, _>(move |params, _| async move {
             assert_eq!(
                 params.text_document.uri,
-                lsp::Url::from_file_path(add_root_for_windows("/file.rs")).unwrap()
+                lsp::Url::from_file_path(path!("/file.rs")).unwrap()
             );
             assert_eq!(params.options.tab_size, 8);
             Ok(Some(vec![]))
@@ -6997,7 +6995,7 @@ async fn test_multibuffer_format_during_save(cx: &mut gpui::TestAppContext) {
 
     let fs = FakeFs::new(cx.executor());
     fs.insert_tree(
-        add_root_for_windows("/a"),
+        path!("/a"),
         json!({
             "main.rs": sample_text_1,
             "other.rs": sample_text_2,
@@ -7006,7 +7004,7 @@ async fn test_multibuffer_format_during_save(cx: &mut gpui::TestAppContext) {
     )
     .await;
 
-    let project = Project::test(fs, [add_root_for_windows("/a").as_ref()], cx).await;
+    let project = Project::test(fs, [path!("/a").as_ref()], cx).await;
     let workspace = cx.add_window(|cx| Workspace::test_new(project.clone(), cx));
     let cx = &mut VisualTestContext::from_window(*workspace.deref(), cx);
 
@@ -7203,9 +7201,9 @@ async fn test_range_format_during_save(cx: &mut gpui::TestAppContext) {
     init_test(cx, |_| {});
 
     let fs = FakeFs::new(cx.executor());
-    fs.insert_file("/file.rs", Default::default()).await;
+    fs.insert_file(path!("/file.rs"), Default::default()).await;
 
-    let project = Project::test(fs, ["/file.rs".as_ref()], cx).await;
+    let project = Project::test(fs, [path!("/").as_ref()], cx).await;
 
     let language_registry = project.read_with(cx, |project, _| project.languages().clone());
     language_registry.add(rust_lang());
@@ -7222,7 +7220,7 @@ async fn test_range_format_during_save(cx: &mut gpui::TestAppContext) {
 
     let buffer = project
         .update(cx, |project, cx| {
-            project.open_local_buffer(add_root_for_windows("/file.rs"), cx)
+            project.open_local_buffer(path!("/file.rs"), cx)
         })
         .await
         .unwrap();
@@ -7243,7 +7241,7 @@ async fn test_range_format_during_save(cx: &mut gpui::TestAppContext) {
         .handle_request::<lsp::request::RangeFormatting, _, _>(move |params, _| async move {
             assert_eq!(
                 params.text_document.uri,
-                lsp::Url::from_file_path(add_root_for_windows("/file.rs")).unwrap()
+                lsp::Url::from_file_path(path!("/file.rs")).unwrap()
             );
             assert_eq!(params.options.tab_size, 4);
             Ok(Some(vec![lsp::TextEdit::new(
@@ -7269,7 +7267,7 @@ async fn test_range_format_during_save(cx: &mut gpui::TestAppContext) {
         move |params, _| async move {
             assert_eq!(
                 params.text_document.uri,
-                lsp::Url::from_file_path(add_root_for_windows("/file.rs")).unwrap()
+                lsp::Url::from_file_path(path!("/file.rs")).unwrap()
             );
             futures::future::pending::<()>().await;
             unreachable!()
@@ -7319,7 +7317,7 @@ async fn test_range_format_during_save(cx: &mut gpui::TestAppContext) {
         .handle_request::<lsp::request::RangeFormatting, _, _>(move |params, _| async move {
             assert_eq!(
                 params.text_document.uri,
-                lsp::Url::from_file_path(add_root_for_windows("/file.rs")).unwrap()
+                lsp::Url::from_file_path(path!("/file.rs")).unwrap()
             );
             assert_eq!(params.options.tab_size, 8);
             Ok(Some(vec![]))
@@ -7339,10 +7337,9 @@ async fn test_document_format_manual_trigger(cx: &mut gpui::TestAppContext) {
     });
 
     let fs = FakeFs::new(cx.executor());
-    fs.insert_file(add_root_for_windows("/file.rs"), Default::default())
-        .await;
+    fs.insert_file(path!("/file.rs"), Default::default()).await;
 
-    let project = Project::test(fs, [add_root_for_windows("/").as_ref()], cx).await;
+    let project = Project::test(fs, [path!("/").as_ref()], cx).await;
 
     let language_registry = project.read_with(cx, |project, _| project.languages().clone());
     language_registry.add(Arc::new(Language::new(
@@ -7377,7 +7374,7 @@ async fn test_document_format_manual_trigger(cx: &mut gpui::TestAppContext) {
 
     let buffer = project
         .update(cx, |project, cx| {
-            project.open_local_buffer(add_root_for_windows("/file.rs"), cx)
+            project.open_local_buffer(path!("/file.rs"), cx)
         })
         .await
         .unwrap();
@@ -7404,7 +7401,7 @@ async fn test_document_format_manual_trigger(cx: &mut gpui::TestAppContext) {
         .handle_request::<lsp::request::Formatting, _, _>(move |params, _| async move {
             assert_eq!(
                 params.text_document.uri,
-                lsp::Url::from_file_path(add_root_for_windows("/file.rs")).unwrap()
+                lsp::Url::from_file_path(path!("/file.rs")).unwrap()
             );
             assert_eq!(params.options.tab_size, 4);
             Ok(Some(vec![lsp::TextEdit::new(
@@ -7426,7 +7423,7 @@ async fn test_document_format_manual_trigger(cx: &mut gpui::TestAppContext) {
     fake_server.handle_request::<lsp::request::Formatting, _, _>(move |params, _| async move {
         assert_eq!(
             params.text_document.uri,
-            lsp::Url::from_file_path(add_root_for_windows("/file.rs")).unwrap()
+            lsp::Url::from_file_path(path!("/file.rs")).unwrap()
         );
         futures::future::pending::<()>().await;
         unreachable!()
@@ -8460,14 +8457,14 @@ async fn test_multiline_completion(cx: &mut gpui::TestAppContext) {
 
     let fs = FakeFs::new(cx.executor());
     fs.insert_tree(
-        add_root_for_windows("/a"),
+        path!("/a"),
         json!({
             "main.ts": "a",
         }),
     )
     .await;
 
-    let project = Project::test(fs, [add_root_for_windows("/a").as_ref()], cx).await;
+    let project = Project::test(fs, [path!("/a").as_ref()], cx).await;
     let language_registry = project.read_with(cx, |project, _| project.languages().clone());
     let typescript_language = Arc::new(Language::new(
         LanguageConfig {
@@ -8527,7 +8524,7 @@ async fn test_multiline_completion(cx: &mut gpui::TestAppContext) {
         .unwrap();
     let _buffer = project
         .update(cx, |project, cx| {
-            project.open_local_buffer_with_lsp(add_root_for_windows("/a/main.ts"), cx)
+            project.open_local_buffer_with_lsp(path!("/a/main.ts"), cx)
         })
         .await
         .unwrap();
@@ -10222,7 +10219,7 @@ async fn go_to_prev_overlapping_diagnostic(
                 .update_diagnostics(
                     LanguageServerId(0),
                     lsp::PublishDiagnosticsParams {
-                        uri: lsp::Url::from_file_path(add_root_for_windows("/root/file")).unwrap(),
+                        uri: lsp::Url::from_file_path(path!("/root/file")).unwrap(),
                         version: None,
                         diagnostics: vec![
                             lsp::Diagnostic {
@@ -10315,7 +10312,7 @@ async fn test_diagnostics_with_links(cx: &mut TestAppContext) {
             lsp_store.update_diagnostics(
                 LanguageServerId(0),
                 lsp::PublishDiagnosticsParams {
-                    uri: lsp::Url::from_file_path(add_root_for_windows("/root/file")).unwrap(),
+                    uri: lsp::Url::from_file_path(path!("/root/file")).unwrap(),
                     version: None,
                     diagnostics: vec![lsp::Diagnostic {
                         range: lsp::Range::new(lsp::Position::new(0, 8), lsp::Position::new(0, 12)),
@@ -10555,14 +10552,14 @@ async fn test_on_type_formatting_not_triggered(cx: &mut gpui::TestAppContext) {
 
     let fs = FakeFs::new(cx.executor());
     fs.insert_tree(
-        add_root_for_windows("/a"),
+        path!("/a"),
         json!({
             "main.rs": "fn main() { let a = 5; }",
             "other.rs": "// Test file",
         }),
     )
     .await;
-    let project = Project::test(fs, [add_root_for_windows("/a").as_ref()], cx).await;
+    let project = Project::test(fs, [path!("/a").as_ref()], cx).await;
 
     let language_registry = project.read_with(cx, |project, _| project.languages().clone());
     language_registry.add(Arc::new(Language::new(
@@ -10614,7 +10611,7 @@ async fn test_on_type_formatting_not_triggered(cx: &mut gpui::TestAppContext) {
 
     let buffer = project
         .update(cx, |project, cx| {
-            project.open_local_buffer(add_root_for_windows("/a/main.rs"), cx)
+            project.open_local_buffer(path!("/a/main.rs"), cx)
         })
         .await
         .unwrap();
@@ -10634,7 +10631,7 @@ async fn test_on_type_formatting_not_triggered(cx: &mut gpui::TestAppContext) {
     fake_server.handle_request::<lsp::request::OnTypeFormatting, _, _>(|params, _| async move {
         assert_eq!(
             params.text_document_position.text_document.uri,
-            lsp::Url::from_file_path(add_root_for_windows("/a/main.rs")).unwrap(),
+            lsp::Url::from_file_path(path!("/a/main.rs")).unwrap(),
         );
         assert_eq!(
             params.text_document_position.position,
@@ -10672,7 +10669,7 @@ async fn test_language_server_restart_due_to_settings_change(cx: &mut gpui::Test
 
     let fs = FakeFs::new(cx.executor());
     fs.insert_tree(
-        add_root_for_windows("/a"),
+        path!("/a"),
         json!({
             "main.rs": "fn main() { let a = 5; }",
             "other.rs": "// Test file",
@@ -10680,7 +10677,7 @@ async fn test_language_server_restart_due_to_settings_change(cx: &mut gpui::Test
     )
     .await;
 
-    let project = Project::test(fs, [add_root_for_windows("/a").as_ref()], cx).await;
+    let project = Project::test(fs, [path!("/a").as_ref()], cx).await;
 
     let server_restarts = Arc::new(AtomicUsize::new(0));
     let closure_restarts = Arc::clone(&server_restarts);
@@ -10720,7 +10717,7 @@ async fn test_language_server_restart_due_to_settings_change(cx: &mut gpui::Test
     let _window = cx.add_window(|cx| Workspace::test_new(project.clone(), cx));
     let _buffer = project
         .update(cx, |project, cx| {
-            project.open_local_buffer_with_lsp(add_root_for_windows("/a/main.rs"), cx)
+            project.open_local_buffer_with_lsp(path!("/a/main.rs"), cx)
         })
         .await
         .unwrap();
@@ -11502,10 +11499,9 @@ async fn test_document_format_with_prettier(cx: &mut gpui::TestAppContext) {
     });
 
     let fs = FakeFs::new(cx.executor());
-    fs.insert_file(add_root_for_windows("/file.ts"), Default::default())
-        .await;
+    fs.insert_file(path!("/file.ts"), Default::default()).await;
 
-    let project = Project::test(fs, [add_root_for_windows("/file.ts").as_ref()], cx).await;
+    let project = Project::test(fs, [path!("/file.ts").as_ref()], cx).await;
     let language_registry = project.read_with(cx, |project, _| project.languages().clone());
 
     language_registry.add(Arc::new(Language::new(
@@ -11538,7 +11534,7 @@ async fn test_document_format_with_prettier(cx: &mut gpui::TestAppContext) {
     let prettier_format_suffix = project::TEST_PRETTIER_FORMAT_SUFFIX;
     let buffer = project
         .update(cx, |project, cx| {
-            project.open_local_buffer(add_root_for_windows("/file.ts"), cx)
+            project.open_local_buffer(path!("/file.ts"), cx)
         })
         .await
         .unwrap();

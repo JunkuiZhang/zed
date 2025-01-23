@@ -1104,7 +1104,7 @@ mod tests {
         ops::Deref as _,
         path::{Path, PathBuf},
     };
-    use util::paths::add_root_for_windows;
+    use util::path;
 
     use super::*;
 
@@ -1129,7 +1129,7 @@ mod tests {
 
         let fs = fs::FakeFs::new(cx.executor().clone());
         fs.insert_tree(
-            add_root_for_windows("/root"),
+            path!("/root"),
             json!({
                 ".git": {},
                 "file_a": "This is file_a",
@@ -1138,18 +1138,14 @@ mod tests {
         )
         .await;
 
-        let project =
-            Project::test(fs.clone(), [Path::new(&add_root_for_windows("/root"))], cx).await;
+        let project = Project::test(fs.clone(), [Path::new(&path!("/root"))], cx).await;
         let workspace = cx.add_window(|cx| Workspace::test_new(project.clone(), cx));
         let cx = &mut VisualTestContext::from_window(*workspace.deref(), cx);
 
         let file_a_editor = workspace
             .update(cx, |workspace, cx| {
-                let file_a_editor = workspace.open_abs_path(
-                    PathBuf::from(add_root_for_windows("/root/file_a")),
-                    true,
-                    cx,
-                );
+                let file_a_editor =
+                    workspace.open_abs_path(PathBuf::from(path!("/root/file_a")), true, cx);
                 ProjectDiffEditor::deploy(workspace, &Deploy, cx);
                 file_a_editor
             })
@@ -1217,7 +1213,7 @@ mod tests {
             });
         });
         fs.set_status_for_repo_via_git_operation(
-            Path::new(&add_root_for_windows("/root/.git")),
+            Path::new(&path!("/root/.git")),
             &[(
                 Path::new("file_a"),
                 TrackedStatus {

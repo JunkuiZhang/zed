@@ -5,7 +5,7 @@ use menu::SelectPrev;
 use project::{Project, ProjectPath};
 use serde_json::json;
 use std::path::Path;
-use util::paths::add_root_for_windows;
+use util::path;
 use workspace::{AppState, Workspace};
 
 #[ctor::ctor]
@@ -25,7 +25,7 @@ async fn test_open_with_prev_tab_selected_and_cycle_on_toggle_action(
         .fs
         .as_fake()
         .insert_tree(
-            add_root_for_windows("/root"),
+            path!("/root"),
             json!({
                 "1.txt": "First file",
                 "2.txt": "Second file",
@@ -35,12 +35,7 @@ async fn test_open_with_prev_tab_selected_and_cycle_on_toggle_action(
         )
         .await;
 
-    let project = Project::test(
-        app_state.fs.clone(),
-        [add_root_for_windows("/root").as_ref()],
-        cx,
-    )
-    .await;
+    let project = Project::test(app_state.fs.clone(), [path!("/root").as_ref()], cx).await;
     let (workspace, cx) = cx.add_window_view(|cx| Workspace::test_new(project.clone(), cx));
 
     let tab_1 = open_buffer("1.txt", &workspace, cx).await;
@@ -86,7 +81,7 @@ async fn test_open_with_last_tab_selected(cx: &mut gpui::TestAppContext) {
         .fs
         .as_fake()
         .insert_tree(
-            add_root_for_windows("/root"),
+            path!("/root"),
             json!({
                 "1.txt": "First file",
                 "2.txt": "Second file",
@@ -95,12 +90,7 @@ async fn test_open_with_last_tab_selected(cx: &mut gpui::TestAppContext) {
         )
         .await;
 
-    let project = Project::test(
-        app_state.fs.clone(),
-        [add_root_for_windows("/root").as_ref()],
-        cx,
-    )
-    .await;
+    let project = Project::test(app_state.fs.clone(), [path!("/root").as_ref()], cx).await;
     let (workspace, cx) = cx.add_window_view(|cx| Workspace::test_new(project.clone(), cx));
 
     let tab_1 = open_buffer("1.txt", &workspace, cx).await;
@@ -179,18 +169,10 @@ async fn test_open_with_single_item(cx: &mut gpui::TestAppContext) {
     app_state
         .fs
         .as_fake()
-        .insert_tree(
-            add_root_for_windows("/root"),
-            json!({"1.txt": "Single file"}),
-        )
+        .insert_tree(path!("/root"), json!({"1.txt": "Single file"}))
         .await;
 
-    let project = Project::test(
-        app_state.fs.clone(),
-        [add_root_for_windows("/root").as_ref()],
-        cx,
-    )
-    .await;
+    let project = Project::test(app_state.fs.clone(), [path!("/root").as_ref()], cx).await;
     let (workspace, cx) = cx.add_window_view(|cx| Workspace::test_new(project.clone(), cx));
 
     let tab = open_buffer("1.txt", &workspace, cx).await;
@@ -209,7 +191,7 @@ async fn test_close_selected_item(cx: &mut gpui::TestAppContext) {
         .fs
         .as_fake()
         .insert_tree(
-            add_root_for_windows("/root"),
+            path!("/root"),
             json!({
                 "1.txt": "First file",
                 "2.txt": "Second file",
@@ -217,12 +199,7 @@ async fn test_close_selected_item(cx: &mut gpui::TestAppContext) {
         )
         .await;
 
-    let project = Project::test(
-        app_state.fs.clone(),
-        [add_root_for_windows("/root").as_ref()],
-        cx,
-    )
-    .await;
+    let project = Project::test(app_state.fs.clone(), [path!("/root").as_ref()], cx).await;
     let (workspace, cx) = cx.add_window_view(|cx| Workspace::test_new(project.clone(), cx));
 
     let tab_1 = open_buffer("1.txt", &workspace, cx).await;
@@ -259,7 +236,7 @@ async fn test_close_preserves_selected_position(cx: &mut gpui::TestAppContext) {
         .fs
         .as_fake()
         .insert_tree(
-            add_root_for_windows("/root"),
+            path!("/root"),
             json!({
                 "1.txt": "First file",
                 "2.txt": "Second file",
@@ -268,12 +245,7 @@ async fn test_close_preserves_selected_position(cx: &mut gpui::TestAppContext) {
         )
         .await;
 
-    let project = Project::test(
-        app_state.fs.clone(),
-        [add_root_for_windows("/root").as_ref()],
-        cx,
-    )
-    .await;
+    let project = Project::test(app_state.fs.clone(), [path!("/root").as_ref()], cx).await;
     let (workspace, cx) = cx.add_window_view(|cx| Workspace::test_new(project.clone(), cx));
 
     let tab_1 = open_buffer("1.txt", &workspace, cx).await;

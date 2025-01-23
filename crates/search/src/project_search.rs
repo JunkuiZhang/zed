@@ -2061,7 +2061,7 @@ pub mod tests {
     use project::FakeFs;
     use serde_json::json;
     use settings::SettingsStore;
-    use util::paths::add_root_for_windows;
+    use util::path;
     use workspace::DeploySearch;
 
     #[gpui::test]
@@ -3177,13 +3177,13 @@ pub mod tests {
 
         let fs = FakeFs::new(cx.background_executor.clone());
         fs.insert_tree(
-            add_root_for_windows("/dir"),
+            path!("/dir"),
             json!({
                 "one.rs": "const ONE: usize = 1;",
             }),
         )
         .await;
-        let project = Project::test(fs.clone(), [add_root_for_windows("/dir").as_ref()], cx).await;
+        let project = Project::test(fs.clone(), [path!("/dir").as_ref()], cx).await;
         let worktree_id = project.update(cx, |this, cx| {
             this.worktrees(cx).next().unwrap().read(cx).id()
         });
@@ -3396,13 +3396,13 @@ pub mod tests {
         // Setup 2 panes, both with a file open and one with a project search.
         let fs = FakeFs::new(cx.background_executor.clone());
         fs.insert_tree(
-            add_root_for_windows("/dir"),
+            path!("/dir"),
             json!({
                 "one.rs": "const ONE: usize = 1;",
             }),
         )
         .await;
-        let project = Project::test(fs.clone(), [add_root_for_windows("/dir").as_ref()], cx).await;
+        let project = Project::test(fs.clone(), [path!("/dir").as_ref()], cx).await;
         let worktree_id = project.update(cx, |this, cx| {
             this.worktrees(cx).next().unwrap().read(cx).id()
         });
@@ -3620,13 +3620,13 @@ pub mod tests {
 
         let fs = FakeFs::new(cx.background_executor.clone());
         fs.insert_tree(
-            add_root_for_windows("/dir"),
+            path!("/dir"),
             json!({
                 "one.rs": "const ONE: usize = 1;",
             }),
         )
         .await;
-        let project = Project::test(fs.clone(), [add_root_for_windows("/dir").as_ref()], cx).await;
+        let project = Project::test(fs.clone(), [path!("/dir").as_ref()], cx).await;
         let worktree_id = project.update(cx, |this, cx| {
             this.worktrees(cx).next().unwrap().read(cx).id()
         });

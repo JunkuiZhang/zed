@@ -562,7 +562,7 @@ mod tests {
     use project::{project_settings::ProjectSettings, Project};
     use serde_json::json;
     use settings::SettingsStore;
-    use util::paths::add_root_for_windows;
+    use util::path;
     use workspace::{open_paths, AppState};
 
     use super::*;
@@ -583,7 +583,7 @@ mod tests {
             .fs
             .as_fake()
             .insert_tree(
-                add_root_for_windows("/dir"),
+                path!("/dir"),
                 json!({
                     "main.ts": "a"
                 }),
@@ -591,7 +591,7 @@ mod tests {
             .await;
         cx.update(|cx| {
             open_paths(
-                &[PathBuf::from(add_root_for_windows("/dir/main.ts"))],
+                &[PathBuf::from(path!("/dir/main.ts"))],
                 app_state,
                 workspace::OpenOptions::default(),
                 cx,
