@@ -3213,6 +3213,7 @@ async fn test_save_as(cx: &mut gpui::TestAppContext) {
 }
 
 #[gpui::test]
+#[allow(unreachable_code)]
 async fn test_rescan_and_remote_updates(cx: &mut gpui::TestAppContext) {
     use worktree::WorktreeModelHandle as _;
 
