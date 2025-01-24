@@ -5482,6 +5482,7 @@ impl WorktreeModelHandle for Model<Worktree> {
         });
 
         async move {
+            panic!();
             fs.create_file(&root_path.join(file_name), Default::default())
                 .await
                 .unwrap();
@@ -5495,7 +5496,6 @@ impl WorktreeModelHandle for Model<Worktree> {
             cx.condition(&tree, |tree, _| tree.entry_for_path(file_name).is_none())
                 .await;
 
-            panic!();
             cx.update(|cx| tree.read(cx).as_local().unwrap().scan_complete())
                 .await;
         }
