@@ -3212,7 +3212,7 @@ async fn test_save_as(cx: &mut gpui::TestAppContext) {
     assert_eq!(opened_buffer, buffer);
 }
 
-#[gpui::test(retries = 5)]
+#[gpui::test]
 async fn test_rescan_and_remote_updates(cx: &mut gpui::TestAppContext) {
     use worktree::WorktreeModelHandle as _;
 
@@ -3234,6 +3234,7 @@ async fn test_rescan_and_remote_updates(cx: &mut gpui::TestAppContext) {
         }
     }));
     eprintln!("1, {:?}", dir.path());
+    panic!();
 
     let project = Project::test(Arc::new(RealFs::default()), [dir.path()], cx).await;
 
