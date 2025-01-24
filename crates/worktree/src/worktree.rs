@@ -2710,6 +2710,7 @@ impl Snapshot {
         self.traverse_from_path(true, true, true, path)
             .entry()
             .and_then(|entry| {
+                println!("entry: {:?}", entry);
                 if entry.path.as_ref() == path {
                     Some(entry)
                 } else {
@@ -5488,9 +5489,9 @@ impl WorktreeModelHandle for Model<Worktree> {
                 .unwrap();
 
             eprintln!("-> create file: {:?}", root_path.join(file_name));
-            panic!();
             cx.condition(&tree, |tree, _| tree.entry_for_path(file_name).is_some())
                 .await;
+            panic!();
 
             fs.remove_file(&root_path.join(file_name), Default::default())
                 .await
