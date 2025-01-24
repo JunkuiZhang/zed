@@ -3235,7 +3235,6 @@ async fn test_rescan_and_remote_updates(cx: &mut gpui::TestAppContext) {
         }
     }));
     eprintln!("1, {:?}", dir.path());
-    panic!();
 
     let project = Project::test(Arc::new(RealFs::default()), [dir.path()], cx).await;
 
@@ -3297,6 +3296,7 @@ async fn test_rescan_and_remote_updates(cx: &mut gpui::TestAppContext) {
     std::fs::rename(dir.path().join("a/file2"), dir.path().join("a/file2.new")).unwrap();
     tree.flush_fs_events(cx).await;
     eprintln!("4");
+    panic!();
 
     cx.update(|app| {
         assert_eq!(
