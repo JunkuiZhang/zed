@@ -5483,10 +5483,10 @@ impl WorktreeModelHandle for Model<Worktree> {
         });
 
         async move {
-            panic!();
             fs.create_file(&root_path.join(file_name), Default::default())
                 .await
                 .unwrap();
+            panic!();
 
             cx.condition(&tree, |tree, _| tree.entry_for_path(file_name).is_some())
                 .await;
