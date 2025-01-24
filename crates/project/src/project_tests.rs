@@ -3291,6 +3291,7 @@ async fn test_rescan_and_remote_updates(cx: &mut gpui::TestAppContext) {
 
     println!("3");
     eprintln!("3");
+    panic!();
     // Rename and delete files and directories.
     tree.flush_fs_events(cx).await;
     std::fs::rename(dir.path().join("a/file3"), dir.path().join("b/c/file3")).unwrap();
@@ -3300,7 +3301,6 @@ async fn test_rescan_and_remote_updates(cx: &mut gpui::TestAppContext) {
     tree.flush_fs_events(cx).await;
     println!("4");
     eprintln!("4");
-    panic!();
 
     cx.update(|app| {
         assert_eq!(
