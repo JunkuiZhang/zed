@@ -5486,10 +5486,10 @@ impl WorktreeModelHandle for Model<Worktree> {
             fs.create_file(&root_path.join(file_name), Default::default())
                 .await
                 .unwrap();
-            panic!();
 
             cx.condition(&tree, |tree, _| tree.entry_for_path(file_name).is_some())
                 .await;
+            panic!();
 
             fs.remove_file(&root_path.join(file_name), Default::default())
                 .await
