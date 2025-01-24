@@ -5468,6 +5468,7 @@ impl WorktreeModelHandle for Model<Worktree> {
     // This function mutates the worktree's directory and waits for those mutations to be picked up,
     // to ensure that all redundant FS events have already been processed.
     #[cfg(any(test, feature = "test-support"))]
+    #[allow(unreachable_code)]
     fn flush_fs_events<'a>(
         &self,
         cx: &'a mut gpui::TestAppContext,
@@ -5494,6 +5495,7 @@ impl WorktreeModelHandle for Model<Worktree> {
             cx.condition(&tree, |tree, _| tree.entry_for_path(file_name).is_none())
                 .await;
 
+            panic!();
             cx.update(|cx| tree.read(cx).as_local().unwrap().scan_complete())
                 .await;
         }
