@@ -1138,7 +1138,7 @@ mod tests {
         )
         .await;
 
-        let project = Project::test(fs.clone(), [Path::new(&path!("/root"))], cx).await;
+        let project = Project::test(fs.clone(), [Path::new(path!("/root"))], cx).await;
         let workspace = cx.add_window(|cx| Workspace::test_new(project.clone(), cx));
         let cx = &mut VisualTestContext::from_window(*workspace.deref(), cx);
 
@@ -1213,7 +1213,7 @@ mod tests {
             });
         });
         fs.set_status_for_repo_via_git_operation(
-            Path::new(&path!("/root/.git")),
+            Path::new(path!("/root/.git")),
             &[(
                 Path::new("file_a"),
                 TrackedStatus {

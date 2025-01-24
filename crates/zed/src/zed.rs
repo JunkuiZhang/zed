@@ -2266,7 +2266,7 @@ mod tests {
             let workspace = workspace.read(cx);
             assert_project_panel_selection(
                 workspace,
-                Path::new(&path!("/dir1")),
+                Path::new(path!("/dir1")),
                 Path::new("a.txt"),
                 cx,
             );
@@ -2300,7 +2300,7 @@ mod tests {
             let workspace = workspace.read(cx);
             assert_project_panel_selection(
                 workspace,
-                Path::new(&path!("/dir2/b.txt")),
+                Path::new(path!("/dir2/b.txt")),
                 Path::new(""),
                 cx,
             );
@@ -2345,7 +2345,7 @@ mod tests {
             let workspace = workspace.read(cx);
             assert_project_panel_selection(
                 workspace,
-                Path::new(&path!("/dir3")),
+                Path::new(path!("/dir3")),
                 Path::new("c.txt"),
                 cx,
             );
@@ -2385,7 +2385,7 @@ mod tests {
             let workspace = workspace.read(cx);
             assert_project_panel_selection(
                 workspace,
-                Path::new(&path!("/d.txt")),
+                Path::new(path!("/d.txt")),
                 Path::new(""),
                 cx,
             );
@@ -2635,7 +2635,7 @@ mod tests {
         let app_state = init_test(cx);
         app_state
             .fs
-            .create_dir(Path::new(&path!("/root")))
+            .create_dir(Path::new(path!("/root")))
             .await
             .unwrap();
 
@@ -2682,7 +2682,7 @@ mod tests {
             .unwrap();
         cx.background_executor.run_until_parked();
         cx.simulate_new_path_selection(|parent_dir| {
-            assert_eq!(parent_dir, Path::new(&path!("/root")));
+            assert_eq!(parent_dir, Path::new(path!("/root")));
             Some(parent_dir.join("the-new-name.rs"))
         });
         cx.read(|cx| {
@@ -3140,7 +3140,7 @@ mod tests {
             .unwrap();
         app_state
             .fs
-            .remove_file(Path::new(&path!("/root/a/file2")), Default::default())
+            .remove_file(Path::new(path!("/root/a/file2")), Default::default())
             .await
             .unwrap();
         cx.background_executor.run_until_parked();
