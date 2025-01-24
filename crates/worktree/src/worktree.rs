@@ -5469,6 +5469,7 @@ impl WorktreeModelHandle for Model<Worktree> {
     // to ensure that all redundant FS events have already been processed.
     #[cfg(any(test, feature = "test-support"))]
     #[allow(unreachable_code)]
+    #[allow(unused_variables)]
     fn flush_fs_events<'a>(
         &self,
         cx: &'a mut gpui::TestAppContext,
