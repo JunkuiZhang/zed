@@ -3214,10 +3214,10 @@ async fn test_save_as(cx: &mut gpui::TestAppContext) {
 
 #[gpui::test]
 #[allow(unreachable_code)]
+#[allow(unused_variables)]
 async fn test_rescan_and_remote_updates(cx: &mut gpui::TestAppContext) {
     use worktree::WorktreeModelHandle as _;
 
-    eprintln!("0");
     init_test(cx);
     cx.executor().allow_parking();
 
@@ -3234,6 +3234,7 @@ async fn test_rescan_and_remote_updates(cx: &mut gpui::TestAppContext) {
             }
         }
     }));
+    println!("1, {:?}", dir.path());
     eprintln!("1, {:?}", dir.path());
 
     let project = Project::test(Arc::new(RealFs::default()), [dir.path()], cx).await;
@@ -3261,6 +3262,7 @@ async fn test_rescan_and_remote_updates(cx: &mut gpui::TestAppContext) {
     let file3_id = id_for_path("a/file3", cx);
     let file4_id = id_for_path("b/c/file4", cx);
 
+    println!("2");
     eprintln!("2");
     // Create a remote copy of this worktree.
     let tree = project.update(cx, |project, cx| project.worktrees(cx).next().unwrap());
@@ -3287,6 +3289,7 @@ async fn test_rescan_and_remote_updates(cx: &mut gpui::TestAppContext) {
         assert!(!buffer5.read(cx).is_dirty());
     });
 
+    println!("3");
     eprintln!("3");
     // Rename and delete files and directories.
     tree.flush_fs_events(cx).await;
@@ -3295,6 +3298,7 @@ async fn test_rescan_and_remote_updates(cx: &mut gpui::TestAppContext) {
     std::fs::rename(dir.path().join("b/c"), dir.path().join("d")).unwrap();
     std::fs::rename(dir.path().join("a/file2"), dir.path().join("a/file2.new")).unwrap();
     tree.flush_fs_events(cx).await;
+    println!("4");
     eprintln!("4");
     panic!();
 
@@ -3315,6 +3319,7 @@ async fn test_rescan_and_remote_updates(cx: &mut gpui::TestAppContext) {
             ]
         );
     });
+    println!("5");
     eprintln!("5");
 
     assert_eq!(id_for_path("a/file2.new", cx), file2_id);
