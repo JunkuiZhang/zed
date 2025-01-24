@@ -3216,6 +3216,7 @@ async fn test_save_as(cx: &mut gpui::TestAppContext) {
 async fn test_rescan_and_remote_updates(cx: &mut gpui::TestAppContext) {
     use worktree::WorktreeModelHandle as _;
 
+    eprintln!("0");
     init_test(cx);
     cx.executor().allow_parking();
 
@@ -3232,6 +3233,7 @@ async fn test_rescan_and_remote_updates(cx: &mut gpui::TestAppContext) {
             }
         }
     }));
+    eprintln!("1, {:?}", dir.path());
 
     let project = Project::test(Arc::new(RealFs::default()), [dir.path()], cx).await;
 
@@ -3258,6 +3260,7 @@ async fn test_rescan_and_remote_updates(cx: &mut gpui::TestAppContext) {
     let file3_id = id_for_path("a/file3", cx);
     let file4_id = id_for_path("b/c/file4", cx);
 
+    eprintln!("2");
     // Create a remote copy of this worktree.
     let tree = project.update(cx, |project, cx| project.worktrees(cx).next().unwrap());
     let metadata = tree.update(cx, |tree, _| tree.metadata_proto());
@@ -3283,6 +3286,7 @@ async fn test_rescan_and_remote_updates(cx: &mut gpui::TestAppContext) {
         assert!(!buffer5.read(cx).is_dirty());
     });
 
+    eprintln!("3");
     // Rename and delete files and directories.
     tree.flush_fs_events(cx).await;
     std::fs::rename(dir.path().join("a/file3"), dir.path().join("b/c/file3")).unwrap();
@@ -3290,6 +3294,7 @@ async fn test_rescan_and_remote_updates(cx: &mut gpui::TestAppContext) {
     std::fs::rename(dir.path().join("b/c"), dir.path().join("d")).unwrap();
     std::fs::rename(dir.path().join("a/file2"), dir.path().join("a/file2.new")).unwrap();
     tree.flush_fs_events(cx).await;
+    eprintln!("4");
 
     cx.update(|app| {
         assert_eq!(
@@ -3308,6 +3313,7 @@ async fn test_rescan_and_remote_updates(cx: &mut gpui::TestAppContext) {
             ]
         );
     });
+    eprintln!("5");
 
     assert_eq!(id_for_path("a/file2.new", cx), file2_id);
     assert_eq!(id_for_path("d/file3", cx), file3_id);
@@ -3349,6 +3355,7 @@ async fn test_rescan_and_remote_updates(cx: &mut gpui::TestAppContext) {
         );
     });
 
+    eprintln!("6");
     // Update the remote worktree. Check that it becomes consistent with the
     // local worktree.
     cx.executor().run_until_parked();

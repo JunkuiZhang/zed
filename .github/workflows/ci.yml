@@ -252,15 +252,18 @@ jobs:
           mkdir -p ./../.cargo
           cp ./.cargo/ci-config.toml ./../.cargo/config.toml
 
-      - name: cargo clippy
-        # Windows can't run shell scripts, so we need to use `cargo xtask`.
-        run: cargo xtask clippy
+      # - name: cargo clippy
+      #   # Windows can't run shell scripts, so we need to use `cargo xtask`.
+      #   run: cargo xtask clippy
+
+      # - name: Run tests
+      #   uses: ./.github/actions/run_tests_windows
 
       - name: Run tests
-        uses: ./.github/actions/run_tests_windows
+        run: cargo.exe test --package project --lib -- project_tests::test_rescan_and_remote_updates --exact --show-output
 
-      - name: Build Zed
-        run: cargo build
+      # - name: Build Zed
+      #   run: cargo build
 
       # Since the Windows runners are stateful, so we need to remove the config file to prevent potential bug.
       - name: Clean CI config file

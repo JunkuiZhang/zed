@@ -107,6 +107,7 @@ static FS_WATCHER_INSTANCE: OnceLock<anyhow::Result<GlobalWatcher, notify::Error
 fn handle_event(event: Result<notify::Event, notify::Error>) {
     let Some(event) = event.log_err() else { return };
     global::<()>(move |watcher| {
+        eprintln!("event: {:?}", event);
         for f in watcher.watchers.lock().iter() {
             f(&event)
         }
