@@ -796,8 +796,8 @@ mod tests {
         assert_eq!(
             task_names(&tasks_picker, cx),
             vec![
-                "hello from /dir/file_with.odd_extension:1:1".to_string(),
-                "opened now: /dir".to_string()
+                concat!("hello from ", path!("/dir/file_with.odd_extension:1:1")).to_string(),
+                concat!("opened now: ", path!("/dir")).to_string(),
             ],
             "Second opened buffer should fill the context, labels should be trimmed if long enough"
         );
@@ -829,8 +829,8 @@ mod tests {
         assert_eq!(
             task_names(&tasks_picker, cx),
             vec![
-                "hello from /dir/file_without_extension:2:3".to_string(),
-                "opened now: /dir".to_string()
+                concat!("hello from ", path!("/dir/file_with.odd_extension:2:3")).to_string(),
+                concat!("opened now: ", path!("/dir")).to_string(),
             ],
             "Opened buffer should fill the context, labels should be trimmed if long enough"
         );

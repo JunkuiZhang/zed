@@ -1417,7 +1417,7 @@ impl ShellExec {
 
 #[cfg(test)]
 mod test {
-    use std::path::{Path, PathBuf};
+    use std::path::Path;
 
     use crate::{
         state::Mode,
@@ -1524,15 +1524,15 @@ mod test {
     #[gpui::test]
     async fn test_command_write(cx: &mut TestAppContext) {
         let mut cx = VimTestContext::new(cx, true).await;
-        let path = PathBuf::from(path!("/root/dir/file.rs"));
+        let path = Path::new(path!("/root/dir/file.rs"));
         let fs = cx.workspace(|workspace, cx| workspace.project().read(cx).fs().clone());
 
         cx.simulate_keystrokes("i @ escape");
         cx.simulate_keystrokes(": w enter");
 
-        assert_eq!(fs.load(&path).await.unwrap().replace("\r\n", "\n"), "@\n");
+        assert_eq!(fs.load(path).await.unwrap().replace("\r\n", "\n"), "@\n");
 
-        fs.as_fake().insert_file(&path, b"oops\n".to_vec()).await;
+        fs.as_fake().insert_file(path, b"oops\n".to_vec()).await;
 
         // conflict!
         cx.simulate_keystrokes("i @ escape");
@@ -1540,15 +1540,12 @@ mod test {
         assert!(cx.has_pending_prompt());
         // "Cancel"
         cx.simulate_prompt_answer(0);
-        assert_eq!(
-            fs.load(&path).await.unwrap().replace("\r\n", "\n"),
-            "oops\n"
-        );
+        assert_eq!(fs.load(path).await.unwrap().replace("\r\n", "\n"), "oops\n");
         assert!(!cx.has_pending_prompt());
         // force overwrite
         cx.simulate_keystrokes(": w ! enter");
         assert!(!cx.has_pending_prompt());
-        assert_eq!(fs.load(&path).await.unwrap().replace("\r\n", "\n"), "@@\n");
+        assert_eq!(fs.load(path).await.unwrap().replace("\r\n", "\n"), "@@\n");
     }
 
     #[gpui::test]
@@ -1649,7 +1646,7 @@ mod test {
 
         // Assert base state, that we're in /root/dir/file.rs
         cx.workspace(|workspace, cx| {
-            assert_active_item(workspace, &path!("/root/dir/file.rs"), "", cx);
+            assert_active_item(workspace, path!("/root/dir/file.rs"), "", cx);
         });
 
         // Insert a new file
@@ -1678,7 +1675,7 @@ mod test {
         cx.workspace(|workspace, cx| {
             assert_active_item(
                 workspace,
-                &path!("/root/dir/file2.rs"),
+                path!("/root/dir/file2.rs"),
                 "This is file2.rs",
                 cx,
             );
@@ -1697,7 +1694,7 @@ mod test {
         // We now have three items
         cx.workspace(|workspace, cx| assert_eq!(workspace.items(cx).count(), 3));
         cx.workspace(|workspace, cx| {
-            assert_active_item(workspace, &path!("/root/dir/file3.rs"), "go to file3", cx);
+            assert_active_item(workspace, path!("/root/dir/file3.rs"), "go to file3", cx);
         });
     }
 
