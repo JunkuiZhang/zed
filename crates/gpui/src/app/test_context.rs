@@ -470,7 +470,7 @@ impl TestAppContext {
         use smol::future::FutureExt as _;
 
         async {
-            for _ in 0..1000 {
+            loop {
                 if model.update(self, &mut predicate) {
                     return Ok(());
                 }
