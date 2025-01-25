@@ -2710,7 +2710,7 @@ impl Snapshot {
         self.traverse_from_path(true, true, true, path)
             .entry()
             .and_then(|entry| {
-                eprintln!("entry: {:?}", entry);
+                eprintln!("     => entry: {:?}<->{:?}", entry.path, path);
                 if entry.path.as_ref() == path {
                     Some(entry)
                 } else {
@@ -5489,6 +5489,7 @@ impl WorktreeModelHandle for Model<Worktree> {
                 .unwrap();
 
             eprintln!("-> create file: {:?}", root_path.join(file_name));
+            eprintln!("-> entry for path: {:?}", file_name);
             cx.condition(&tree, |tree, _| tree.entry_for_path(file_name).is_some())
                 .await;
             panic!();

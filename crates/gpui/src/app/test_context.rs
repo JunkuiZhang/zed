@@ -470,7 +470,7 @@ impl TestAppContext {
         use smol::future::FutureExt as _;
 
         async {
-            for _ in 0..100 {
+            for _ in 0..1000 {
                 if model.update(self, &mut predicate) {
                     return Ok(());
                 }
@@ -480,7 +480,7 @@ impl TestAppContext {
                 // }
                 // panic!("condition timed out");
             }
-            Err(anyhow!("condition timed out"))
+            Err(anyhow!("condition timed out???????????"))
         }
         .race(timer.map(|_| Err(anyhow!("condition timed out"))))
         .await
