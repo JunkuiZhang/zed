@@ -9,14 +9,7 @@ use crate::{
 };
 use anyhow::{anyhow, bail};
 use futures::{channel::oneshot, Stream, StreamExt};
-use std::{
-    cell::RefCell,
-    future::Future,
-    ops::Deref,
-    rc::Rc,
-    sync::{atomic::AtomicUsize, Arc},
-    time::Duration,
-};
+use std::{cell::RefCell, future::Future, ops::Deref, rc::Rc, sync::Arc, time::Duration};
 
 /// A TestAppContext is provided to tests created with `#[gpui::test]`, it provides
 /// an implementation of `Context` with additional methods that are useful in tests.
@@ -102,8 +95,6 @@ impl Context for TestAppContext {
         app.read_window(window, read)
     }
 }
-
-static COUNT: AtomicUsize = AtomicUsize::new(0);
 
 impl TestAppContext {
     /// Creates a new `TestAppContext`. Usually you can rely on `#[gpui::test]` to do this for you.
@@ -479,12 +470,7 @@ impl TestAppContext {
         use smol::future::FutureExt as _;
 
         async {
-            loop {
-                let x = COUNT.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                if x > 20 {
-                    panic!();
-                }
-                eprintln!("--> {:?}", x);
+            for _ in 0..100 {
                 if model.update(self, &mut predicate) {
                     return Ok(());
                 }
@@ -493,6 +479,7 @@ impl TestAppContext {
                     bail!("model dropped")
                 }
             }
+            Err(anyhow!("condition timed out"))
         }
         .race(timer.map(|_| Err(anyhow!("condition timed out"))))
         .await

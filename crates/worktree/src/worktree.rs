@@ -2710,7 +2710,7 @@ impl Snapshot {
         self.traverse_from_path(true, true, true, path)
             .entry()
             .and_then(|entry| {
-                println!("entry: {:?}", entry);
+                eprintln!("entry: {:?}", entry);
                 if entry.path.as_ref() == path {
                     Some(entry)
                 } else {

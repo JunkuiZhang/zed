@@ -260,6 +260,7 @@ jobs:
       #   uses: ./.github/actions/run_tests_windows
 
       - name: Run tests
+        id: rust_test
         run: cargo.exe test --package project --lib -- project_tests::test_rescan_and_remote_updates --exact --show-output
 
       # - name: Build Zed
