@@ -470,15 +470,15 @@ impl TestAppContext {
         use smol::future::FutureExt as _;
 
         async {
-            for _ in 0..100 {
-                if model.update(self, &mut predicate) {
-                    return Ok(());
-                }
-
-                if notifications.next().await.is_none() {
-                    bail!("model dropped")
-                }
+            // for _ in 0..100 {
+            if model.update(self, &mut predicate) {
+                return Ok(());
             }
+
+            if notifications.next().await.is_none() {
+                bail!("model dropped")
+            }
+            // }
             Err(anyhow!("condition timed out"))
         }
         .race(timer.map(|_| Err(anyhow!("condition timed out"))))
