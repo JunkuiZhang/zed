@@ -471,6 +471,7 @@ impl TestAppContext {
 
         async {
             // for _ in 0..100 {
+            panic!("condition timed out");
             if model.update(self, &mut predicate) {
                 return Ok(());
             }
