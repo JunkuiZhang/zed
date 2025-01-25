@@ -4579,7 +4579,7 @@ impl BackgroundScanner {
                 child_entry.is_external = true;
             } else if child_metadata.is_symlink {
                 let canonical_path = match self.fs.canonicalize(&child_abs_path).await {
-                    Ok(path) => path,
+                    Ok(path) => SanitizedPath::from(path),
                     Err(err) => {
                         log::error!(
                             "error reading target of symlink {:?}: {:?}",
@@ -4595,7 +4595,7 @@ impl BackgroundScanner {
                 let root_canonical_path = match &root_canonical_path {
                     Some(path) => path,
                     None => match self.fs.canonicalize(&root_abs_path).await {
-                        Ok(path) => root_canonical_path.insert(path),
+                        Ok(path) => root_canonical_path.insert(SanitizedPath::from(path)),
                         Err(err) => {
                             log::error!("error canonicalizing root {:?}: {:?}", root_abs_path, err);
                             continue;
@@ -4607,7 +4607,7 @@ impl BackgroundScanner {
                     child_entry.is_external = true;
                 }
 
-                child_entry.canonical_path = Some(canonical_path.into());
+                child_entry.canonical_path = Some(canonical_path.as_path().as_ref().into());
             }
 
             if child_entry.is_dir() {
