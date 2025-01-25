@@ -474,11 +474,11 @@ impl TestAppContext {
                 if model.update(self, &mut predicate) {
                     return Ok(());
                 }
-                panic!("condition timed out");
 
                 if notifications.next().await.is_none() {
                     bail!("model dropped")
                 }
+                panic!("condition timed out");
             }
             Err(anyhow!("condition timed out"))
         }
