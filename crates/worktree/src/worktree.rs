@@ -659,6 +659,9 @@ impl Worktree {
                 worktree_id,
                 path: Path::new(EMPTY_PATH),
             });
+            let remote_path_separator_type =
+                proto::PathSeparatorType::from_i32(worktree.path_separator_type)
+                    .unwrap_or(PATH_SEPARATOR_TYPE);
 
             let settings = WorktreeSettings::get(settings_location, cx).clone();
             let worktree = RemoteWorktree {
@@ -673,10 +676,7 @@ impl Worktree {
                 snapshot_subscriptions: Default::default(),
                 visible: worktree.visible,
                 disconnected: false,
-                remote_path_separator_type: proto::PathSeparatorType::from_i32(
-                    worktree.path_separator_type,
-                )
-                .unwrap_or(PATH_SEPARATOR_TYPE),
+                remote_path_separator_type,
             };
 
             // Apply updates to a separate snapshot in a background task, then
@@ -686,10 +686,11 @@ impl Worktree {
                     while let Some(update) = background_updates_rx.next().await {
                         {
                             let mut lock = background_snapshot.lock();
-                            if let Err(error) = lock
-                                .0
-                                .apply_remote_update(update.clone(), &settings.file_scan_inclusions)
-                            {
+                            if let Err(error) = lock.0.apply_remote_update(
+                                update.clone(),
+                                &settings.file_scan_inclusions,
+                                remote_path_separator_type,
+                            ) {
                                 log::error!("error applying worktree update: {}", error);
                             }
                             lock.1.push(update);
@@ -2173,7 +2174,11 @@ impl RemoteWorktree {
             this.update(&mut cx, |worktree, _| {
                 let worktree = worktree.as_remote_mut().unwrap();
                 let snapshot = &mut worktree.background_snapshot.lock().0;
-                let entry = snapshot.insert_entry(entry, &worktree.file_scan_inclusions);
+                let entry = snapshot.insert_entry(
+                    entry,
+                    &worktree.file_scan_inclusions,
+                    worktree.remote_path_separator_type,
+                );
                 worktree.snapshot = snapshot.clone();
                 entry
             })?
@@ -2334,8 +2339,14 @@ impl Snapshot {
         &mut self,
         entry: proto::Entry,
         always_included_paths: &PathMatcher,
+        remote_path_separator_type: proto::PathSeparatorType,
     ) -> Result<Entry> {
-        let entry = Entry::try_from((&self.root_char_bag, always_included_paths, entry))?;
+        let entry = Entry::try_from((
+            &self.root_char_bag,
+            always_included_paths,
+            entry,
+            remote_path_separator_type,
+        ))?;
         let old_entry = self.entries_by_id.insert_or_replace(
             PathEntry {
                 id: entry.id,
@@ -2395,6 +2406,7 @@ impl Snapshot {
         &mut self,
         mut update: proto::UpdateWorktree,
         always_included_paths: &PathMatcher,
+        remote_path_separator_type: proto::PathSeparatorType,
     ) -> Result<()> {
         log::trace!(
             "applying remote worktree update. {} entries updated, {} removed",
@@ -2418,7 +2430,12 @@ impl Snapshot {
         }
 
         for entry in update.updated_entries {
-            let entry = Entry::try_from((&self.root_char_bag, always_included_paths, entry))?;
+            let entry = Entry::try_from((
+                &self.root_char_bag,
+                always_included_paths,
+                entry,
+                remote_path_separator_type,
+            ))?;
             if let Some(PathEntry { path, .. }) = self.entries_by_id.get(&entry.id, &()) {
                 entries_by_path_edits.push(Edit::Remove(PathKey(path.clone())));
             }
@@ -6065,18 +6082,41 @@ impl<'a> From<&'a Entry> for proto::Entry {
     }
 }
 
-impl<'a> TryFrom<(&'a CharBag, &PathMatcher, proto::Entry)> for Entry {
+impl<'a>
+    TryFrom<(
+        &'a CharBag,
+        &PathMatcher,
+        proto::Entry,
+        proto::PathSeparatorType,
+    )> for Entry
+{
     type Error = anyhow::Error;
 
     fn try_from(
-        (root_char_bag, always_included, entry): (&'a CharBag, &PathMatcher, proto::Entry),
+        (root_char_bag, always_included, entry, remote_path_separator_type): (
+            &'a CharBag,
+            &PathMatcher,
+            proto::Entry,
+            proto::PathSeparatorType,
+        ),
     ) -> Result<Self> {
         let kind = if entry.is_dir {
             EntryKind::Dir
         } else {
             EntryKind::File
         };
-        let path: Arc<Path> = PathBuf::from(entry.path).into();
+        let path: Arc<Path> = if remote_path_separator_type == PATH_SEPARATOR_TYPE {
+            PathBuf::from(entry.path).into()
+        } else {
+            let from = match remote_path_separator_type {
+                proto::PathSeparatorType::ForwardSlash => "/",
+                proto::PathSeparatorType::BackwardSlash => "\\",
+            };
+            log::info!(
+                "Converting path from remote path separator type {} to local path separator type {}", from, std::path::MAIN_SEPARATOR_STR
+            );
+            PathBuf::from(entry.path.replace(from, std::path::MAIN_SEPARATOR_STR)).into()
+        };
         let char_bag = char_bag_for_path(*root_char_bag, &path);
         Ok(Entry {
             id: ProjectEntryId::from_proto(entry.id),
