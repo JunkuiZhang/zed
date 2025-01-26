@@ -802,7 +802,7 @@ impl Worktree {
             root_name: self.root_name().to_string(),
             visible: self.is_visible(),
             abs_path: self.abs_path().as_os_str().to_string_lossy().into(),
-            path_separator_type: PATH_SEPARATOR_TYPE.into(),
+            path_separator_type: self.path_separator_type().into(),
         }
     }
 
@@ -1215,10 +1215,12 @@ impl Worktree {
     }
 
     pub fn path_separator_type(&self) -> proto::PathSeparatorType {
-        match self {
+        let ret = match self {
             Worktree::Local(_) => PATH_SEPARATOR_TYPE,
             Worktree::Remote(worktree) => worktree.remote_path_separator_type,
-        }
+        };
+        println!("--> path_separator_type: {:?}", ret);
+        ret
     }
 }
 
