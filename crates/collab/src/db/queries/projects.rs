@@ -83,6 +83,7 @@ impl Database {
                         visible: ActiveValue::set(worktree.visible),
                         scan_id: ActiveValue::set(0),
                         completed_scan_id: ActiveValue::set(0),
+                        remote_path_separator_type: ActiveValue::set(worktree.path_separator_type),
                     }
                 }))
                 .exec(&*tx)
@@ -193,6 +194,7 @@ impl Database {
                 visible: ActiveValue::set(worktree.visible),
                 scan_id: ActiveValue::set(0),
                 completed_scan_id: ActiveValue::set(0),
+                remote_path_separator_type: ActiveValue::set(worktree.path_separator_type),
             }))
             .on_conflict(
                 OnConflict::columns([worktree::Column::ProjectId, worktree::Column::Id])
@@ -693,6 +695,10 @@ impl Database {
                         settings_files: Default::default(),
                         scan_id: db_worktree.scan_id as u64,
                         completed_scan_id: db_worktree.completed_scan_id as u64,
+                        remote_path_separator_type: proto::PathSeparatorType::from_i32(
+                            db_worktree.remote_path_separator_type,
+                        )
+                        .unwrap_or(proto::PathSeparatorType::ForwardSlash),
                     },
                 )
             })

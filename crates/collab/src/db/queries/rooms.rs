@@ -620,6 +620,10 @@ impl Database {
                 settings_files: Default::default(),
                 scan_id: db_worktree.scan_id as u64,
                 completed_scan_id: db_worktree.completed_scan_id as u64,
+                remote_path_separator_type: proto::PathSeparatorType::from_i32(
+                    db_worktree.remote_path_separator_type,
+                )
+                .unwrap_or(proto::PathSeparatorType::ForwardSlash),
             };
 
             let rejoined_worktree = rejoined_project

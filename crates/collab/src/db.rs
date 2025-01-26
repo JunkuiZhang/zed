@@ -672,6 +672,7 @@ impl RejoinedProject {
                     root_name: worktree.root_name.clone(),
                     visible: worktree.visible,
                     abs_path: worktree.abs_path.clone(),
+                    path_separator_type: worktree.remote_path_separator_type.into(),
                 })
                 .collect(),
             collaborators: self
@@ -698,6 +699,7 @@ pub struct RejoinedWorktree {
     pub settings_files: Vec<WorktreeSettingsFile>,
     pub scan_id: u64,
     pub completed_scan_id: u64,
+    pub remote_path_separator_type: proto::PathSeparatorType,
 }
 
 pub struct LeftRoom {
@@ -764,6 +766,7 @@ pub struct Worktree {
     pub settings_files: Vec<WorktreeSettingsFile>,
     pub scan_id: u64,
     pub completed_scan_id: u64,
+    pub remote_path_separator_type: proto::PathSeparatorType,
 }
 
 #[derive(Debug)]
