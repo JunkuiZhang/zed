@@ -146,6 +146,7 @@ pub struct RemoteWorktree {
     replica_id: ReplicaId,
     visible: bool,
     disconnected: bool,
+    remote_path_separator_type: proto::PathSeparatorType,
 }
 
 #[derive(Clone)]
@@ -667,6 +668,7 @@ impl Worktree {
                 snapshot_subscriptions: Default::default(),
                 visible: worktree.visible,
                 disconnected: false,
+                remote_path_separator_type: worktree.path_separator_type,
             };
 
             // Apply updates to a separate snapshot in a background task, then

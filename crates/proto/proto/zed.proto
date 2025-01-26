@@ -2018,6 +2018,7 @@ message WorktreeMetadata {
     string root_name = 2;
     bool visible = 3;
     string abs_path = 4;
+    PathSeparatorType path_separator_type = 5;
 }
 
 message UpdateDiffBase {
@@ -2621,4 +2622,9 @@ message InstallExtension {
 message RegisterBufferWithLanguageServers{
     uint64 project_id = 1;
     uint64 buffer_id = 2;
+}
+
+enum PathSeparatorType {
+    ForwardSlash = 0;
+    BackwardSlash = 1;
 }
