@@ -79,6 +79,11 @@ pub const FS_WATCH_LATENCY: Duration = Duration::from_millis(100);
 #[cfg(not(feature = "test-support"))]
 pub const FS_WATCH_LATENCY: Duration = Duration::from_millis(100);
 
+#[cfg(target_os = "windows")]
+const PATH_SEPARATOR_TYPE: proto::PathSeparatorType = proto::PathSeparatorType::BackwardSlash;
+#[cfg(not(target_os = "windows"))]
+const PATH_SEPARATOR_TYPE: proto::PathSeparatorType = proto::PathSeparatorType::ForwardSlash;
+
 /// A set of local or remote files that are being opened as part of a project.
 /// Responsible for tracking related FS (for local)/collab (for remote) events and corresponding updates.
 /// Stores git repositories data and the diagnostics for the file(s).
@@ -668,7 +673,10 @@ impl Worktree {
                 snapshot_subscriptions: Default::default(),
                 visible: worktree.visible,
                 disconnected: false,
-                remote_path_separator_type: worktree.path_separator_type,
+                remote_path_separator_type: proto::PathSeparatorType::from_i32(
+                    worktree.path_separator_type,
+                )
+                .unwrap_or(PATH_SEPARATOR_TYPE),
             };
 
             // Apply updates to a separate snapshot in a background task, then
@@ -793,6 +801,7 @@ impl Worktree {
             root_name: self.root_name().to_string(),
             visible: self.is_visible(),
             abs_path: self.abs_path().as_os_str().to_string_lossy().into(),
+            path_separator_type: PATH_SEPARATOR_TYPE.into(),
         }
     }
 
