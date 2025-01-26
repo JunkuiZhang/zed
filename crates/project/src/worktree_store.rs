@@ -294,6 +294,9 @@ impl WorktreeStore {
                         root_name,
                         visible,
                         abs_path: response.canonicalized_path,
+                        // TODO:
+                        // Only forward slash is supported for now, but we should support both.
+                        path_separator_type: proto::PathSeparatorType::ForwardSlash.into(),
                     },
                     client,
                     cx,
@@ -595,6 +598,7 @@ impl WorktreeStore {
                     root_name: worktree.root_name().into(),
                     visible: worktree.is_visible(),
                     abs_path: worktree.abs_path().to_string_lossy().into(),
+                    path_separator_type: worktree.path_separator_type().into(),
                 }
             })
             .collect()

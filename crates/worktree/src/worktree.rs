@@ -1213,6 +1213,13 @@ impl Worktree {
             worktree_scan_id: scan_id as u64,
         })
     }
+
+    pub fn path_separator_type(&self) -> proto::PathSeparatorType {
+        match self {
+            Worktree::Local(_) => PATH_SEPARATOR_TYPE,
+            Worktree::Remote(worktree) => worktree.remote_path_separator_type,
+        }
+    }
 }
 
 impl LocalWorktree {
