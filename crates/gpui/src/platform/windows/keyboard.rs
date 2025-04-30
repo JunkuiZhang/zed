@@ -46,7 +46,7 @@ pub(crate) struct WindowsKeyboardMapper;
 
 impl PlatformKeyboardMapper for WindowsKeyboardMapper {
     fn vscode_keystroke_to_gpui_keystroke(&self, keystroke: Keystroke) -> Keystroke {
-        todo!()
+        keystroke
     }
 }
 
